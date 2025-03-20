@@ -134,6 +134,63 @@ func TestRemoveListener(t *testing.T) {
 	)
 }
 
+// TestGlobalListener tests that both event-specific and global listeners
+// are invoked when an event is emitted.
+func TestGlobalListener(t *testing.T) {
+	emitter := NewEventEmitter()
+	ch := make(chan *types.Event, 2)
+
+	emitter.RegisterListener("globaltest", func(e *types.Event) {
+		ch <- e
+	})
+	emitter.RegisterGlobalListener(func(e *types.Event) {
+		ch <- e
+	})
+
+	evt := types.NewEvent("globaltest", "global")
+	emitter.Emit(evt)
+
+	count := 0
+	for i := 0; i < 2; i++ {
+		select {
+		case received := <-ch:
+			assert.Equal(t, "global", received.Message)
+			count++
+		case <-time.After(500 * time.Millisecond):
+			t.Error("timeout waiting for global event callback")
+		}
+	}
+	assert.Equal(t, 2, count)
+}
+
+// TestRemoveGlobalListener tests removal of a global listener.
+func TestRemoveGlobalListener(t *testing.T) {
+	emitter := NewEventEmitter()
+	ch := make(chan *types.Event, 1)
+
+	emitter.RegisterGlobalListener(func(e *types.Event) {
+		ch <- e
+	})
+
+	emitter.mu.RLock()
+	require.NotEmpty(t, emitter.globalListeners)
+	idToRemove := emitter.globalListeners[0].id
+	emitter.mu.RUnlock()
+
+	emitter.RemoveGlobalListener(idToRemove)
+
+	emitter.Emit(types.NewEvent("globaltest", "remove"))
+
+	select {
+	case <-ch:
+		t.Error(
+			"global listener should have been removed, but received an event",
+		)
+	case <-time.After(500 * time.Millisecond):
+		// Expected: no event received.
+	}
+}
+
 // TestEmitNoListeners tests emitting an event with no listeners.
 func TestEmitNoListeners(t *testing.T) {
 	emitter := NewEventEmitter()

@@ -17,10 +17,11 @@ type eventListener struct {
 
 // EventEmitter is responsible for emitting events.
 type defaultEventEmitter struct {
-	listeners map[types.EventType][]eventListener
-	mu        sync.RWMutex   // Mutex for thread safety when emitting events.
-	counter   int            // Used to generate unique IDs for listeners.
-	timeout   *time.Duration // Optional timeout for each callback.
+	listeners       map[types.EventType][]eventListener
+	globalListeners []eventListener
+	mu              sync.RWMutex   // Mutex for thread safety when emitting events.
+	counter         int            // Used to generate unique IDs for listeners.
+	timeout         *time.Duration // Optional timeout for each callback.
 }
 
 // defaultEventEmitter implements the EventEmitter interface.
@@ -35,10 +36,11 @@ var _ types.EventEmitter = (*defaultEventEmitter)(nil)
 //   - *defaultEventEmitter: A new defaultEventEmitter.
 func NewEventEmitter() *defaultEventEmitter {
 	eventEmitter := &defaultEventEmitter{
-		listeners: make(map[types.EventType][]eventListener),
-		mu:        sync.RWMutex{},
-		counter:   0,
-		timeout:   nil,
+		listeners:       make(map[types.EventType][]eventListener),
+		globalListeners: []eventListener{},
+		mu:              sync.RWMutex{},
+		counter:         0,
+		timeout:         nil,
 	}
 	return eventEmitter
 }
@@ -109,6 +111,46 @@ func (e *defaultEventEmitter) RemoveListener(
 	}
 }
 
+// RegisterGlobalListener registers a callback to listen to all events.
+//
+// Parameters:
+//   - callback: The function to call when an event is emitted.
+//
+// Returns:
+//   - *eventEmitter: The eventEmitter.
+func (e *defaultEventEmitter) RegisterGlobalListener(
+	callback types.EventCallback,
+) types.EventEmitter {
+	e.mu.Lock()
+	defer e.mu.Unlock()
+	e.counter++
+	id := fmt.Sprintf("global-%d", e.counter)
+	e.globalListeners = append(e.globalListeners, eventListener{
+		id:       id,
+		callback: callback,
+	})
+	return e
+}
+
+// RemoveGlobalListener removes a global listener based on its ID.
+//
+// Parameters:
+//   - id: The ID of the listener to remove.
+//
+// Returns:
+//   - *eventEmitter: The eventEmitter.
+func (e *defaultEventEmitter) RemoveGlobalListener(id string) {
+	e.mu.Lock()
+	defer e.mu.Unlock()
+	for i, l := range e.globalListeners {
+		if l.id == id {
+			e.globalListeners = append(e.globalListeners[:i],
+				e.globalListeners[i+1:]...)
+			break
+		}
+	}
+}
+
 // Emit emits an event to all registered listeners. It runs each callback in a
 // separate goroutine. If timeout is set for the eventEmitter, the callbacks
 // will be run with the specified timeout. If the timeout is exceeded, an error
@@ -122,6 +164,7 @@ func (e *defaultEventEmitter) RemoveListener(
 func (e *defaultEventEmitter) Emit(event *types.Event) {
 	e.mu.RLock()
 	listeners := e.listeners[event.Type]
+	globalListeners := e.globalListeners
 	e.mu.RUnlock()
 	// Determine the timeout for each callback.
 	var timeout *time.Duration
@@ -129,10 +172,16 @@ func (e *defaultEventEmitter) Emit(event *types.Event) {
 		timeout = new(time.Duration)
 		*timeout = *e.timeout
 	}
-	// Run each callback in a separate goroutine.
+	// Emit to type-specific listeners.
 	for _, l := range listeners {
-		go func(cb types.EventCallback, timeout *time.Duration) {
-			runCallback(event, cb, timeout)
+		go func(cb types.EventCallback, to *time.Duration) {
+			runCallback(event, cb, to)
+		}(l.callback, timeout)
+	}
+	// Emit to global listeners.
+	for _, l := range globalListeners {
+		go func(cb types.EventCallback, to *time.Duration) {
+			runCallback(event, cb, to)
 		}(l.callback, timeout)
 	}
 }
