@@ -24,9 +24,9 @@ type HandlerLogicFn[Input any] func(
 	w http.ResponseWriter, r *http.Request, i *Input,
 ) (any, error)
 
-// defaultHandler represents an endpoint with input, business logic, and
+// DefaultHandler represents an endpoint with input, business logic, and
 // output.
-type defaultHandler[Input any] struct {
+type DefaultHandler[Input any] struct {
 	inputHandler   endpointtypes.InputHandler[Input]
 	handlerLogicFn HandlerLogicFn[Input]
 	errorHandler   endpointtypes.ErrorHandler
@@ -46,14 +46,14 @@ type defaultHandler[Input any] struct {
 //   - outputHandler: The output handler.
 //
 // Returns:
-//   - *defaultHandler: A new defaultHandler instance.
+//   - *DefaultHandler: A new DefaultHandler instance.
 func NewHandler[Input any](
 	inputHandler endpointtypes.InputHandler[Input],
 	handlerLogicFn HandlerLogicFn[Input],
 	errorHandler endpointtypes.ErrorHandler,
 	outputHandler endpointtypes.OutputHandler,
-) *defaultHandler[Input] {
-	return &defaultHandler[Input]{
+) *DefaultHandler[Input] {
+	return &DefaultHandler[Input]{
 		inputHandler:   inputHandler,
 		handlerLogicFn: handlerLogicFn,
 		errorHandler:   errorHandler,
@@ -62,16 +62,65 @@ func NewHandler[Input any](
 	}
 }
 
-// WithEmitterLogger adds an emitter logger to the handler.
+// WithInputHandler adds an input handler to the handler and returns a new
+// handler instance.
+//
+// Parameters:
+//   - inputHandler: The input handler.
+//
+// Returns:
+//   - *DefaultHandler: A new handler instance.
+func (h *DefaultHandler[Input]) WithInputHandler(
+	inputHandler endpointtypes.InputHandler[Input],
+) *DefaultHandler[Input] {
+	new := *h
+	new.inputHandler = inputHandler
+	return &new
+}
+
+// WithHandlerLogicFn adds a handler logic function to the handler and returns a
+// new handler instance.
+//
+// Parameters:
+//   - handlerLogicFn: The handler logic function.
+//
+// Returns:
+//   - *DefaultHandler: A new handler instance.
+func (h *DefaultHandler[Input]) WithHandlerLogicFn(
+	handlerLogicFn HandlerLogicFn[Input],
+) *DefaultHandler[Input] {
+	new := *h
+	new.handlerLogicFn = handlerLogicFn
+	return &new
+}
+
+// WithErrorHandler adds an error handler to the handler and returns a new
+// handler instance.
+//
+// Parameters:
+//   - errorHandler: The error handler.
+//
+// Returns:
+//   - *DefaultHandler: A new handler instance.
+func (h *DefaultHandler[Input]) WithErrorHandler(
+	errorHandler endpointtypes.ErrorHandler,
+) *DefaultHandler[Input] {
+	new := *h
+	new.errorHandler = errorHandler
+	return &new
+}
+
+// WithEmitterLogger adds an emitter logger to the handler and returns a new
+// handler instance.
 //
 // Parameters:
 //   - emitterLogger: The emitter logger.
 //
 // Returns:
-//   - *handler: A new handler instance.
-func (h *defaultHandler[Input]) WithEmitterLogger(
+//   - *DefaultHandler: A new handler instance.
+func (h *DefaultHandler[Input]) WithEmitterLogger(
 	emitterLogger utiltypes.EmitterLogger,
-) *defaultHandler[Input] {
+) *DefaultHandler[Input] {
 	new := *h
 	if new.emitterLogger == nil {
 		new.emitterLogger = defaultEmitterLogger()
@@ -87,7 +136,7 @@ func (h *defaultHandler[Input]) WithEmitterLogger(
 // Parameters:
 //   - w: The HTTP response writer.
 //   - r: The HTTP request.
-func (h *defaultHandler[Input]) Handle(
+func (h *DefaultHandler[Input]) Handle(
 	w http.ResponseWriter, r *http.Request,
 ) {
 	// Handle input.
@@ -107,7 +156,7 @@ func (h *defaultHandler[Input]) Handle(
 }
 
 // handleError maps apierror and writes the error response.
-func (h *defaultHandler[Input]) handleError(
+func (h *DefaultHandler[Input]) handleError(
 	w http.ResponseWriter, r *http.Request, err error,
 ) {
 	// Handle error.
@@ -131,7 +180,7 @@ func (h *defaultHandler[Input]) handleError(
 }
 
 // handleOutput processes and writes the endpoint response.
-func (h *defaultHandler[Input]) handleOutput(
+func (h *DefaultHandler[Input]) handleOutput(
 	w http.ResponseWriter, r *http.Request, out any, outError error, status int,
 ) {
 	if err := h.outputHandler.Handle(

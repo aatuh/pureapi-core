@@ -36,10 +36,12 @@ func (s *DefinitionsTestSuite) Test_NewDefinitionsAndAdd() {
 				panic(err)
 			}
 		}))
-	defs := NewDefinitions(d1)
+	defs, err := NewDefinitions(d1)
+	s.NoError(err)
 	s.Equal(1, len(defs.definitions))
 
-	newDefs := defs.Add(d2)
+	newDefs, err := defs.Add(d2)
+	s.NoError(err)
 	s.Equal(2, len(newDefs.definitions))
 	// Ensure original remains unchanged.
 	s.Equal(1, len(defs.definitions))
@@ -63,7 +65,8 @@ func (s *DefinitionsTestSuite) Test_ToEndpoints() {
 				panic(err)
 			}
 		}))
-	defs := NewDefinitions(d1, d2)
+	defs, err := NewDefinitions(d1, d2)
+	s.NoError(err)
 	endpoints := defs.ToEndpoints()
 	s.Equal(2, len(endpoints))
 
