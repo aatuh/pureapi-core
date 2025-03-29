@@ -9,10 +9,10 @@ import (
 
 // DefaultDefinition represents an endpoint definition.
 type DefaultDefinition struct {
-	url     string
-	method  string
-	stack   types.Stack
-	handler http.HandlerFunc
+	URLVal     string
+	MethodVal  string
+	StackVal   types.Stack
+	HandlerVal http.HandlerFunc
 }
 
 var _ types.Definition = (*DefaultDefinition)(nil)
@@ -34,10 +34,10 @@ func NewDefinition(
 	handler http.HandlerFunc,
 ) *DefaultDefinition {
 	return &DefaultDefinition{
-		url:     defaultURL(url),
-		method:  method,
-		stack:   stack,
-		handler: handler,
+		URLVal:     defaultURL(url),
+		MethodVal:  method,
+		StackVal:   stack,
+		HandlerVal: handler,
 	}
 }
 
@@ -46,7 +46,7 @@ func NewDefinition(
 // Returns:
 //   - string: The URL of the endpoint.
 func (d *DefaultDefinition) URL() string {
-	return d.url
+	return d.URLVal
 }
 
 // Method returns the HTTP method of the endpoint.
@@ -54,7 +54,7 @@ func (d *DefaultDefinition) URL() string {
 // Returns:
 //   - string: The HTTP method of the endpoint.
 func (d *DefaultDefinition) Method() string {
-	return d.method
+	return d.MethodVal
 }
 
 // Stack returns the middleware stack of the endpoint.
@@ -62,7 +62,7 @@ func (d *DefaultDefinition) Method() string {
 // Returns:
 //   - Stack: The middleware stack of the endpoint.
 func (d *DefaultDefinition) Stack() types.Stack {
-	return d.stack
+	return d.StackVal
 }
 
 // Handler returns the handler of the endpoint.
@@ -70,7 +70,7 @@ func (d *DefaultDefinition) Stack() types.Stack {
 // Returns:
 //   - http.HandlerFunc: The handler of the endpoint.
 func (d *DefaultDefinition) Handler() http.HandlerFunc {
-	return d.handler
+	return d.HandlerVal
 }
 
 // Clone creates a deep copy of an endpoint definition and returns the cloned
@@ -83,8 +83,8 @@ func (d *DefaultDefinition) Handler() http.HandlerFunc {
 //   - *Definition: the cloned definition.
 func (d *DefaultDefinition) Clone() *DefaultDefinition {
 	cloned := *d
-	if d.stack != nil {
-		cloned.stack = d.stack.Clone()
+	if d.StackVal != nil {
+		cloned.StackVal = d.StackVal.Clone()
 	}
 	return &cloned
 }
@@ -99,7 +99,7 @@ func (d *DefaultDefinition) Clone() *DefaultDefinition {
 //   - *DefaultDefinition: A new DefaultDefinition instance.
 func (d *DefaultDefinition) WithURL(url string) *DefaultDefinition {
 	new := *d
-	new.url = defaultURL(url)
+	new.URLVal = defaultURL(url)
 	return &new
 }
 
@@ -113,7 +113,7 @@ func (d *DefaultDefinition) WithURL(url string) *DefaultDefinition {
 //   - *DefaultDefinition: A new DefaultDefinition instance.
 func (d *DefaultDefinition) WithMethod(method string) *DefaultDefinition {
 	new := *d
-	new.method = method
+	new.MethodVal = method
 	return &new
 }
 
@@ -129,7 +129,7 @@ func (d *DefaultDefinition) WithHandler(
 	handler http.HandlerFunc,
 ) *DefaultDefinition {
 	new := *d
-	new.handler = handler
+	new.HandlerVal = handler
 	return &new
 }
 
@@ -145,7 +145,7 @@ func (d *DefaultDefinition) WithMiddlewareStack(
 	stack types.Stack,
 ) *DefaultDefinition {
 	new := *d
-	new.stack = stack
+	new.StackVal = stack
 	return &new
 }
 

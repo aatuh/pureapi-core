@@ -23,14 +23,14 @@ func TestNewEndpoint(t *testing.T) {
 		url             string
 		method          string
 		middlewares     types.Middlewares
-		middlewareCheck func(t *testing.T, ep *defaultEndpoint)
+		middlewareCheck func(t *testing.T, ep *DefaultEndpoint)
 	}{
 		{
 			name:        "Empty values",
 			url:         "",
 			method:      "",
 			middlewares: nil,
-			middlewareCheck: func(t *testing.T, ep *defaultEndpoint) {
+			middlewareCheck: func(t *testing.T, ep *DefaultEndpoint) {
 				assert.Equal(t, ep.Middlewares(), NewMiddlewares(),
 					"Middlewares should be empty default middlewares",
 				)
@@ -103,7 +103,7 @@ func TestEndpointWithHandler(t *testing.T) {
 	// Test that the new endpoint's handler behaves as expected.
 	req := httptest.NewRequest("GET", "/handler-test", nil)
 	w := httptest.NewRecorder()
-	newEp.handler(w, req)
+	newEp.HandlerVal(w, req)
 	res := w.Result()
 	defer res.Body.Close()
 
