@@ -54,6 +54,14 @@ func NewSQLDBAdapter(driver string, dsn string) (types.DB, error) {
 	return db, err
 }
 
+// UnderlyingDB returns the underlying *sql.DB instance.
+//
+// Returns:
+//   - *sql.DB: The underlying *sql.DB instance.
+func (db *sqlDB) UnderlyingDB() *sql.DB {
+	return db.DB
+}
+
 // Ping sends a ping to the database to check if it is alive.
 //
 // Returns:

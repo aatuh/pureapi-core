@@ -156,6 +156,7 @@ func (fdb *fakeDB) Close() error {
 	return nil
 }
 
+func (fdb *fakeDB) UnderlyingDB() *sql.DB              { return nil }
 func (fdb *fakeDB) Ping() error                        { return nil }
 func (fdb *fakeDB) SetConnMaxLifetime(d time.Duration) {}
 func (fdb *fakeDB) SetConnMaxIdleTime(d time.Duration) {}

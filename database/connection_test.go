@@ -36,6 +36,10 @@ func (f *FakeDB) Ping() error {
 	return f.pingErr
 }
 
+func (f *FakeDB) UnderlyingDB() *sql.DB {
+	panic("not implemented")
+}
+
 func (f *FakeDB) SetConnMaxLifetime(d time.Duration) {
 	f.connMaxLifetime = d
 }

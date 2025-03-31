@@ -9,6 +9,7 @@ import (
 // DB is an interface for core database operations and connection management.
 type DB interface {
 	Preparer
+	UnderlyingDB() *sql.DB
 	Ping() error
 	SetConnMaxLifetime(d time.Duration)
 	SetConnMaxIdleTime(d time.Duration)
