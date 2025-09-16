@@ -2,29 +2,27 @@ package endpoint
 
 import (
 	"sync"
-
-	"github.com/pureapi/pureapi-core/endpoint/types"
 )
 
-// defaultStack manages a list of middleware wrappers with concurrency safety
+// DefaultStack manages a list of middleware wrappers with concurrency safety
 // for editing the list.
-type defaultStack struct {
+type DefaultStack struct {
 	mu       sync.RWMutex
-	wrappers []types.Wrapper
+	wrappers []Wrapper
 }
 
-// defaultStack implements the Stack interface.
-var _ types.Stack = (*defaultStack)(nil)
+// DefaultStack implements the Stack interface.
+var _ Stack = (*DefaultStack)(nil)
 
-// NewStack creates and returns an initialized defaultStack.
+// NewStack creates and returns an initialized DefaultStack.
 //
 // Parameters:
 //   - wrappers: The initial list of middleware wrappers.
 //
 // Returns:
-//   - *defaultStack: A new defaultStack instance.
-func NewStack(wrappers ...types.Wrapper) *defaultStack {
-	return &defaultStack{
+//   - *DefaultStack: A new DefaultStack instance.
+func NewStack(wrappers ...Wrapper) *DefaultStack {
+	return &DefaultStack{
 		mu:       sync.RWMutex{},
 		wrappers: wrappers,
 	}
@@ -34,7 +32,7 @@ func NewStack(wrappers ...types.Wrapper) *defaultStack {
 //
 // Returns:
 //   - []Wrapper: The list of middleware wrappers in the stack.
-func (s *defaultStack) Wrappers() []types.Wrapper {
+func (s *DefaultStack) Wrappers() []Wrapper {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 	return s.wrappers
@@ -44,10 +42,10 @@ func (s *defaultStack) Wrappers() []types.Wrapper {
 //
 // Returns:
 //   - Middlewares: The list of middlewares in the stack.
-func (s *defaultStack) Middlewares() types.Middlewares {
+func (s *DefaultStack) Middlewares() Middlewares {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
-	middlewares := []types.Middleware{}
+	middlewares := []Middleware{}
 	for _, wrapper := range s.wrappers {
 		middlewares = append(middlewares, wrapper.Middleware())
 	}
@@ -58,11 +56,11 @@ func (s *defaultStack) Middlewares() types.Middlewares {
 //
 // Returns:
 //   - *Stack: The cloned middleware stack.
-func (s *defaultStack) Clone() types.Stack {
+func (s *DefaultStack) Clone() Stack {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
-	newStack := &defaultStack{}
-	newStack.wrappers = make([]types.Wrapper, len(s.wrappers))
+	newStack := &DefaultStack{}
+	newStack.wrappers = make([]Wrapper, len(s.wrappers))
 	copy(newStack.wrappers, s.wrappers)
 	return newStack
 }
@@ -75,7 +73,7 @@ func (s *defaultStack) Clone() types.Stack {
 //
 // Returns:
 //   - *Stack: The updated middleware stack.
-func (s *defaultStack) AddWrapper(w types.Wrapper) types.Stack {
+func (s *DefaultStack) AddWrapper(w Wrapper) Stack {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	s.wrappers = append(s.wrappers, w)
@@ -94,16 +92,16 @@ func (s *defaultStack) AddWrapper(w types.Wrapper) types.Stack {
 // Returns:
 //   - *Stack: The updated middleware stack.
 //   - bool: True if a matching wrapper was found and insertion succeeded.
-func (s *defaultStack) InsertBefore(
-	id string, w types.Wrapper,
-) (types.Stack, bool) {
+func (s *DefaultStack) InsertBefore(
+	id string, w Wrapper,
+) (Stack, bool) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	for i, wrapper := range s.wrappers {
 		if wrapper.ID() == id {
 			s.wrappers = append(
 				s.wrappers[:i],
-				append([]types.Wrapper{w}, s.wrappers[i:]...)...,
+				append([]Wrapper{w}, s.wrappers[i:]...)...,
 			)
 			return s, true
 		}
@@ -123,9 +121,9 @@ func (s *defaultStack) InsertBefore(
 // Returns:
 //   - *Stack: The updated middleware stack.
 //   - bool: True if a matching wrapper was found and insertion succeeded.
-func (s *defaultStack) InsertAfter(
-	id string, w types.Wrapper,
-) (types.Stack, bool) {
+func (s *DefaultStack) InsertAfter(
+	id string, w Wrapper,
+) (Stack, bool) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	for i, wrapper := range s.wrappers {
@@ -133,7 +131,7 @@ func (s *defaultStack) InsertAfter(
 			pos := i + 1
 			s.wrappers = append(
 				s.wrappers[:pos],
-				append([]types.Wrapper{w}, s.wrappers[pos:]...)...,
+				append([]Wrapper{w}, s.wrappers[pos:]...)...,
 			)
 			return s, true
 		}
@@ -151,7 +149,7 @@ func (s *defaultStack) InsertAfter(
 // Returns:
 //   - *Stack: The updated middleware stack.
 //   - bool: True if the middleware was found and removed; false otherwise.
-func (s *defaultStack) Remove(id string) (types.Stack, bool) {
+func (s *DefaultStack) Remove(id string) (Stack, bool) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	for i, wrapper := range s.wrappers {

@@ -1,12 +1,10 @@
-package database_test
+package database
 
 import (
 	"context"
 	"testing"
 	"time"
 
-	"github.com/pureapi/pureapi-core/database"
-	"github.com/pureapi/pureapi-core/database/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
@@ -15,9 +13,9 @@ import (
 )
 
 // openInMemoryDB is a helper that opens an in-memory sqlite3 database.
-func openInMemoryDB(t *testing.T) types.DB {
+func openInMemoryDB(t *testing.T) DB {
 	// Ensure that in-memory databases are always shared.
-	db, err := database.NewSQLDBAdapter("sqlite3", "file::memory:?cache=shared")
+	db, err := NewSQLDBAdapter("sqlite3", "file::memory:?cache=shared")
 	require.NoError(t, err)
 	return db
 }
@@ -25,7 +23,7 @@ func openInMemoryDB(t *testing.T) types.DB {
 // SQLDBIntTestSuite is a suite of tests for SQLDB-related integration tests.
 type SQLDBIntTestSuite struct {
 	suite.Suite
-	db types.DB
+	db DB
 }
 
 // TestSQLDBIntTestSuite runs the test suite.

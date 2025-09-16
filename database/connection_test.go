@@ -7,7 +7,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/pureapi/pureapi-core/database/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
@@ -58,30 +57,30 @@ func (f *FakeDB) SetMaxIdleConns(n int) {
 
 func (f *FakeDB) BeginTx(
 	ctx context.Context, options *sql.TxOptions,
-) (types.Tx, error) {
+) (Tx, error) {
 	panic("not implemented")
 }
-func (f *FakeDB) Exec(query string, args ...any) (types.Result, error) {
+func (f *FakeDB) Exec(query string, args ...any) (Result, error) {
 	panic("not implemented")
 }
-func (f *FakeDB) Query(query string, args ...any) (types.Rows, error) {
+func (f *FakeDB) Query(query string, args ...any) (Rows, error) {
 	panic("not implemented")
 }
-func (f *FakeDB) QueryRow(query string, args ...any) types.Row {
+func (f *FakeDB) QueryRow(query string, args ...any) Row {
 	panic("not implemented")
 }
 func (f *FakeDB) Close() error {
 	return nil
 }
-func (f *FakeDB) Prepare(query string) (types.Stmt, error) {
+func (f *FakeDB) Prepare(query string) (Stmt, error) {
 	panic("not implemented")
 }
 
-func fakeConnOpenFn(driver string, dsn string) (types.DB, error) {
+func fakeConnOpenFn(driver string, dsn string) (DB, error) {
 	return NewFakeDB(driver, dsn), nil
 }
 
-func fakeConnOpenFnError(driver string, dsn string) (types.DB, error) {
+func fakeConnOpenFnError(driver string, dsn string) (DB, error) {
 	return nil, errors.New("fake connOpenFn error")
 }
 
@@ -151,7 +150,7 @@ func (s *ConnectionTestSuite) Test_PingError() {
 	// Use a factory that returns a FakeDB with a ping error.
 	db, err := Connect(
 		s.cfg,
-		func(driver string, dsn string) (types.DB, error) {
+		func(driver string, dsn string) (DB, error) {
 			f := NewFakeDB(driver, dsn)
 			f.pingErr = errors.New("ping failed")
 			return f, nil

@@ -3,9 +3,11 @@ package database
 import (
 	"context"
 	"fmt"
-
-	"github.com/pureapi/pureapi-core/database/types"
 )
+
+// TxFn is a function that takes in a transaction, and returns a result and an
+// error.
+type TxFn[Result any] func(ctx context.Context, tx Tx) (Result, error)
 
 // Transaction executes a TxFn within a transaction.
 // It recovers from panics, rolls back on errors, and commits if no error
@@ -20,7 +22,7 @@ import (
 //   - Result: The result of the transactional function.
 //   - error: An error if the transaction fails.
 func Transaction[Result any](
-	ctx context.Context, tx types.Tx, txFn types.TxFn[Result],
+	ctx context.Context, tx Tx, txFn TxFn[Result],
 ) (result Result, txErr error) {
 	defer func() {
 		// Recover from panics.
@@ -45,7 +47,7 @@ func Transaction[Result any](
 }
 
 // finalizeTransaction commits or rollbacks a transaction.
-func finalizeTransaction(tx types.Tx, txErr error) error {
+func finalizeTransaction(tx Tx, txErr error) error {
 	if txErr != nil {
 		if err := tx.Rollback(); err != nil {
 			return fmt.Errorf("finalizeTransaction rollback error: %w", err)

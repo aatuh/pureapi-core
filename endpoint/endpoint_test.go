@@ -5,7 +5,6 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/pureapi/pureapi-core/endpoint/types"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -22,7 +21,7 @@ func TestNewEndpoint(t *testing.T) {
 		name            string
 		url             string
 		method          string
-		middlewares     types.Middlewares
+		middlewares     Middlewares
 		middlewareCheck func(t *testing.T, ep *DefaultEndpoint)
 	}{
 		{
@@ -59,7 +58,7 @@ func TestNewEndpoint(t *testing.T) {
 			assert.Equal(t, tc.url, ep.URL(), "URL should match")
 			assert.Equal(t, tc.method, ep.Method(), "HTTP method should match")
 			if tc.middlewareCheck != nil {
-				tc.middlewareCheck(t, ep)
+				tc.middlewareCheck(t, ep.(*DefaultEndpoint))
 			} else {
 				assert.Equal(
 					t, tc.middlewares, ep.Middlewares(),
@@ -103,7 +102,7 @@ func TestEndpointWithHandler(t *testing.T) {
 	// Test that the new endpoint's handler behaves as expected.
 	req := httptest.NewRequest("GET", "/handler-test", nil)
 	w := httptest.NewRecorder()
-	newEp.HandlerVal(w, req)
+	newEp.(*DefaultEndpoint).HandlerVal(w, req)
 	res := w.Result()
 	defer res.Body.Close()
 

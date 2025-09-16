@@ -7,9 +7,8 @@ import (
 
 	_ "github.com/mattn/go-sqlite3"
 
-	"github.com/pureapi/pureapi-core/database"
-	"github.com/pureapi/pureapi-core/database/types"
-	"github.com/pureapi/pureapi-core/doc/examples"
+	"github.com/aatuh/pureapi-core/database"
+	"github.com/aatuh/pureapi-core/doc/examples"
 )
 
 // Product represents a product entity.
@@ -26,7 +25,7 @@ func (p *Product) TableName() string {
 }
 
 // ScanRow scans a database row into the Product.
-func (p *Product) ScanRow(row types.Row) error {
+func (p *Product) ScanRow(row database.Row) error {
 	return row.Scan(&p.ID, &p.Name, &p.Price)
 }
 
@@ -103,7 +102,7 @@ func main() {
 //
 // Parameters:
 //   - db: The database handle.
-func CreateTable(db types.DB) {
+func CreateTable(db database.DB) {
 	// Create the "products" table.
 	createTableSQL := `
 		CREATE TABLE products (
@@ -120,7 +119,7 @@ func CreateTable(db types.DB) {
 
 // InsertProducts inserts two products using Exec. It demonstrates how to use
 // the Exec function to run a query that inserts rows.
-func InsertProducts(preparer types.Preparer) {
+func InsertProducts(preparer database.Preparer) {
 	// Insert two products using Exec.
 	insertSQL := "INSERT INTO products (name, price) VALUES (?, ?);"
 	if _, err := database.Exec(
@@ -147,7 +146,7 @@ func InsertProducts(preparer types.Preparer) {
 //
 // Parameters:
 //   - db: The database handle.
-func UpdateProduct(preparer types.Preparer) {
+func UpdateProduct(preparer database.Preparer) {
 	updateSQL := "UPDATE products SET price = ? WHERE id = ?;"
 	res, err := database.Exec(
 		context.Background(),
@@ -171,7 +170,7 @@ func UpdateProduct(preparer types.Preparer) {
 //
 // Parameters:
 //   - db: The database handle.
-func UpdateProductRaw(db types.DB) {
+func UpdateProductRaw(db database.DB) {
 	updateSQL := "UPDATE products SET price = ? WHERE id = ?;"
 	res, err := database.ExecRaw(
 		context.Background(),
@@ -198,7 +197,7 @@ func UpdateProductRaw(db types.DB) {
 //
 // Parameters:
 //   - db: The database handle.
-func QueryProductCount(preparer types.Preparer) {
+func QueryProductCount(preparer database.Preparer) {
 	count, err := database.QuerySingleValue(
 		context.Background(),
 		preparer,
@@ -218,7 +217,7 @@ func QueryProductCount(preparer types.Preparer) {
 //
 // Parameters:
 //   - db: The database handle.
-func GetProduct(preparer types.Preparer) {
+func GetProduct(preparer database.Preparer) {
 	product, err := database.QuerySingleEntity(
 		context.Background(),
 		preparer,
@@ -238,7 +237,7 @@ func GetProduct(preparer types.Preparer) {
 //
 // Parameters:
 //   - db: The database handle.
-func GetProductRaw(db types.DB) {
+func GetProductRaw(db database.DB) {
 	rows, err := database.QueryRaw(
 		context.Background(),
 		db,
@@ -271,7 +270,7 @@ func GetProductRaw(db types.DB) {
 //
 // Parameters:
 //   - db: The database handle.
-func GetAllProducts(preparer types.Preparer) {
+func GetAllProducts(preparer database.Preparer) {
 	// Query all products and map them into a slice of Product structs.
 	products, err := database.QueryEntities(
 		context.Background(),
@@ -295,7 +294,7 @@ func GetAllProducts(preparer types.Preparer) {
 //
 // Parameters:
 //   - db: The database handle.
-func DemoRowToEntity(db types.DB) {
+func DemoRowToEntity(db database.DB) {
 	stmt, err := db.Prepare(
 		"SELECT id, name, price FROM products WHERE id = ?;",
 	)
@@ -318,14 +317,14 @@ func DemoRowToEntity(db types.DB) {
 //
 // Parameters:
 //   - db: The database handle.
-func DemoRowToAny(db types.DB) {
+func DemoRowToAny(db database.DB) {
 	stmt, err := db.Prepare("SELECT name FROM products WHERE id = ?;")
 	if err != nil {
 		log.Fatalf("Prepare error in DemoRowToAny: %v", err)
 	}
 	defer stmt.Close()
 	row := stmt.QueryRow(2)
-	namePtr, err := database.RowToAny(
+	namePtr, err := database.RowToAnyScalar(
 		context.Background(), row, func() *string { return new(string) },
 	)
 	if err != nil {
@@ -339,13 +338,13 @@ func DemoRowToAny(db types.DB) {
 //
 // Parameters:
 //   - db: The database handle.
-func DemoRowsToAny(db types.DB) {
+func DemoRowsToAny(db database.DB) {
 	rows, err := db.Query("SELECT name FROM products WHERE price > ?;", 0)
 	if err != nil {
 		log.Fatalf("Query error in DemoRowsToAny: %v", err)
 	}
 	defer rows.Close()
-	names, err := database.RowsToAny(
+	names, err := database.RowsToAnyScalars(
 		context.Background(), rows, func() *string { return new(string) },
 	)
 	if err != nil {
@@ -362,7 +361,7 @@ func DemoRowsToAny(db types.DB) {
 //
 // Parameters:
 //   - db: The database handle.
-func DemoRowsToEntities(db types.DB) {
+func DemoRowsToEntities(db database.DB) {
 	rows, err := db.Query("SELECT id, name, price FROM products WHERE price > ?;", 0)
 	if err != nil {
 		log.Fatalf("Query error in DemoRowsToEntities: %v", err)

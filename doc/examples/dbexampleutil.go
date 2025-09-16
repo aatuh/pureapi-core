@@ -3,8 +3,7 @@ package examples
 import (
 	"time"
 
-	"github.com/pureapi/pureapi-core/database"
-	"github.com/pureapi/pureapi-core/database/types"
+	"github.com/aatuh/pureapi-core/database"
 )
 
 // Cfg returns a ConnectConfig for an in-memory SQLite DB.
@@ -30,7 +29,7 @@ func Cfg() database.ConnectConfig {
 //
 // Returns:
 //   - DB: A new instance of DB.
-func DummyConnectionOpen(driver string, dsn string) (types.DB, error) {
+func DummyConnectionOpen(driver string, dsn string) (database.DB, error) {
 	return database.NewSQLDBAdapter(driver, dsn)
 }
 
@@ -44,7 +43,7 @@ func DummyConnectionOpen(driver string, dsn string) (types.DB, error) {
 //   - DB: The database connection.
 func Connect(
 	cfg database.ConnectConfig, connOpenFn database.ConnOpenFn,
-) (types.DB, error) {
+) (database.DB, error) {
 	// For SQLite, the DSN is simply the database name.
 	db, err := database.Connect(cfg, connOpenFn, cfg.Database)
 	if err != nil {

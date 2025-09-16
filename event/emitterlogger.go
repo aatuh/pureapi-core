@@ -1,11 +1,21 @@
-package util
+package event
 
-import "github.com/pureapi/pureapi-core/util/types"
+import "github.com/aatuh/pureapi-core/logging"
 
-// emitterLogger is a struct that can emit events and log messages.
-type emitterLogger struct {
-	eventEmitter    types.EventEmitter
-	loggerFactoryFn types.LoggerFactoryFn
+// EmitterLogger is an interface that can emit events and log messages.
+type EmitterLogger interface {
+	Debug(event *Event, factoryParams ...any)
+	Info(event *Event, factoryParams ...any)
+	Warn(event *Event, factoryParams ...any)
+	Error(event *Event, factoryParams ...any)
+	Fatal(event *Event, factoryParams ...any)
+	Trace(event *Event, factoryParams ...any)
+}
+
+// DefaultEmitterLogger is a struct that can emit events and log messages.
+type DefaultEmitterLogger struct {
+	eventEmitter    EventEmitter
+	loggerFactoryFn logging.LoggerFactoryFn
 }
 
 // NewEmitterLogger creates a new EmitterLogger.
@@ -15,11 +25,11 @@ type emitterLogger struct {
 //   - loggerFactoryFn: A LoggerFactoryFn.
 //
 // Returns:
-//   - *emitterLogger: A new emitterLogger instance.
+//   - *DefaultEmitterLogger: A new DefaultEmitterLogger instance.
 func NewEmitterLogger(
-	eventEmitter types.EventEmitter, loggerFactoryFn types.LoggerFactoryFn,
-) *emitterLogger {
-	return &emitterLogger{
+	eventEmitter EventEmitter, loggerFactoryFn logging.LoggerFactoryFn,
+) *DefaultEmitterLogger {
+	return &DefaultEmitterLogger{
 		eventEmitter:    eventEmitter,
 		loggerFactoryFn: loggerFactoryFn,
 	}
@@ -28,9 +38,9 @@ func NewEmitterLogger(
 // NewNoopEmitterLogger creates a new EmitterLogger that does nothing.
 //
 // Returns:
-//   - *emitterLogger: A new emitterLogger instance.
-func NewNoopEmitterLogger() *emitterLogger {
-	return &emitterLogger{}
+//   - *DefaultEmitterLogger: A new DefaultEmitterLogger instance.
+func NewNoopEmitterLogger() *DefaultEmitterLogger {
+	return &DefaultEmitterLogger{}
 }
 
 // Debug emits an event and logs at the Debug level.
@@ -38,7 +48,7 @@ func NewNoopEmitterLogger() *emitterLogger {
 // Parameters:
 //   - event The event to emit and log.
 //   - factoryParams: The parameters to pass to the logger factory function.
-func (e *emitterLogger) Debug(event *types.Event, factoryParams ...any) {
+func (e *DefaultEmitterLogger) Debug(event *Event, factoryParams ...any) {
 	e.emitIfCan(event)
 	if e.loggerFactoryFn != nil {
 		e.loggerFactoryFn(factoryParams...).Debug(event.Message)
@@ -50,7 +60,7 @@ func (e *emitterLogger) Debug(event *types.Event, factoryParams ...any) {
 // Parameters:
 //   - event The event to emit and log.
 //   - factoryParams: The parameters to pass to the logger factory function.
-func (e *emitterLogger) Trace(event *types.Event, factoryParams ...any) {
+func (e *DefaultEmitterLogger) Trace(event *Event, factoryParams ...any) {
 	e.emitIfCan(event)
 	if e.loggerFactoryFn != nil {
 		e.loggerFactoryFn(factoryParams...).Trace(event.Message)
@@ -62,7 +72,7 @@ func (e *emitterLogger) Trace(event *types.Event, factoryParams ...any) {
 // Parameters:
 //   - event The event to emit and log.
 //   - factoryParams: The parameters to pass to the logger factory function.
-func (e *emitterLogger) Info(event *types.Event, factoryParams ...any) {
+func (e *DefaultEmitterLogger) Info(event *Event, factoryParams ...any) {
 	e.emitIfCan(event)
 	if e.loggerFactoryFn != nil {
 		e.loggerFactoryFn(factoryParams...).Info(event.Message)
@@ -74,7 +84,7 @@ func (e *emitterLogger) Info(event *types.Event, factoryParams ...any) {
 // Parameters:
 //   - event The event to emit and log.
 //   - factoryParams: The parameters to pass to the logger factory function.
-func (e *emitterLogger) Warn(event *types.Event, factoryParams ...any) {
+func (e *DefaultEmitterLogger) Warn(event *Event, factoryParams ...any) {
 	e.emitIfCan(event)
 	if e.loggerFactoryFn != nil {
 		e.loggerFactoryFn(factoryParams...).Warn(event.Message)
@@ -86,7 +96,7 @@ func (e *emitterLogger) Warn(event *types.Event, factoryParams ...any) {
 // Parameters:
 //   - event The event to emit and log.
 //   - factoryParams: The parameters to pass to the logger factory function.
-func (e *emitterLogger) Error(event *types.Event, factoryParams ...any) {
+func (e *DefaultEmitterLogger) Error(event *Event, factoryParams ...any) {
 	e.emitIfCan(event)
 	if e.loggerFactoryFn != nil {
 		e.loggerFactoryFn(factoryParams...).Error(event.Message)
@@ -98,7 +108,7 @@ func (e *emitterLogger) Error(event *types.Event, factoryParams ...any) {
 // Parameters:
 //   - event The event to emit and log.
 //   - factoryParams: The parameters to pass to the logger factory function.
-func (e *emitterLogger) Fatal(event *types.Event, factoryParams ...any) {
+func (e *DefaultEmitterLogger) Fatal(event *Event, factoryParams ...any) {
 	e.emitIfCan(event)
 	if e.loggerFactoryFn != nil {
 		e.loggerFactoryFn(factoryParams...).Fatal(event.Message)
@@ -106,7 +116,7 @@ func (e *emitterLogger) Fatal(event *types.Event, factoryParams ...any) {
 }
 
 // emitIfCan emits the event if the event emitter is not nil.
-func (e *emitterLogger) emitIfCan(event *types.Event) {
+func (e *DefaultEmitterLogger) emitIfCan(event *Event) {
 	if e.eventEmitter != nil {
 		e.eventEmitter.Emit(event)
 	}

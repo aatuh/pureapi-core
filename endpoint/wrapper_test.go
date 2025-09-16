@@ -5,13 +5,12 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/pureapi/pureapi-core/endpoint/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 // dummyMiddleware is a simple middleware that adds a header.
-func dummyMiddleware(header, value string) types.Middleware {
+func dummyMiddleware(header, value string) Middleware {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.Header().Add(header, value)
@@ -33,7 +32,7 @@ func TestBuild(t *testing.T) {
 	w1 := NewWrapper("mw1", dummyMiddleware("X-Test", "value"))
 	stack := NewStack(w1)
 	mws := stack.Middlewares()
-	require.Len(t, mws.(*defaultMiddlewares).middlewares, 1)
+	require.Len(t, mws.(*DefaultMiddlewares).middlewares, 1)
 	// Test middleware behavior: create a handler that writes "ok", wrap it,
 	// and verify that the header "X-Test" is added.
 	final := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

@@ -1,31 +1,31 @@
-package util
+package event
 
 import (
 	"fmt"
 	"testing"
 
-	"github.com/pureapi/pureapi-core/util/types"
+	"github.com/aatuh/pureapi-core/logging"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 )
 
 // FakeEventEmitter is a dummy event emitter that records emitted events.
 type FakeEventEmitter struct {
-	EmittedEvents []*types.Event
+	EmittedEvents []*Event
 }
 
 func (f *FakeEventEmitter) RegisterListener(
-	eventType types.EventType, callback types.EventCallback,
-) types.EventEmitter {
+	eventType EventType, callback EventCallback,
+) EventEmitter {
 	return f
 }
 
 func (f *FakeEventEmitter) RemoveListener(
-	eventType types.EventType, id string,
+	eventType EventType, id string,
 ) {
 }
 
-func (f *FakeEventEmitter) Emit(event *types.Event) {
+func (f *FakeEventEmitter) Emit(event *Event) {
 	f.EmittedEvents = append(f.EmittedEvents, event)
 }
 
@@ -106,17 +106,17 @@ func (suite *EmitterLoggerTestSuite) SetupTest() {
 // fakeLoggerFactory returns the fake logger stored in the suite.
 func (suite *EmitterLoggerTestSuite) fakeLoggerFactory(
 	params ...any,
-) types.ILogger {
+) logging.ILogger {
 	return suite.fakeLogger
 }
 
 // testLogging is a helper to test a specific logging level.
 func (suite *EmitterLoggerTestSuite) testLogging(
 	level string,
-	logFn func(el *emitterLogger, event *types.Event),
+	logFn func(el *DefaultEmitterLogger, event *Event),
 ) {
-	// Create a sample event.
-	event := types.NewEvent(types.EventType(level), level+" message")
+	// Create a sample
+	event := NewEvent(EventType(level), level+" message")
 	// Create a new emitterLogger with both fake event emitter and fake logger.
 	el := NewEmitterLogger(suite.fakeEmitter, suite.fakeLoggerFactory)
 	// Call the logging method.
@@ -143,42 +143,42 @@ func (suite *EmitterLoggerTestSuite) testLogging(
 
 // TestDebug verifies the Debug method.
 func (suite *EmitterLoggerTestSuite) TestDebug() {
-	suite.testLogging("Debug", func(el *emitterLogger, event *types.Event) {
+	suite.testLogging("Debug", func(el *DefaultEmitterLogger, event *Event) {
 		el.Debug(event, "param1", "param2")
 	})
 }
 
 // TestTrace verifies the Trace method.
 func (suite *EmitterLoggerTestSuite) TestTrace() {
-	suite.testLogging("Trace", func(el *emitterLogger, event *types.Event) {
+	suite.testLogging("Trace", func(el *DefaultEmitterLogger, event *Event) {
 		el.Trace(event)
 	})
 }
 
 // TestInfo verifies the Info method.
 func (suite *EmitterLoggerTestSuite) TestInfo() {
-	suite.testLogging("Info", func(el *emitterLogger, event *types.Event) {
+	suite.testLogging("Info", func(el *DefaultEmitterLogger, event *Event) {
 		el.Info(event)
 	})
 }
 
 // TestWarn verifies the Warn method.
 func (suite *EmitterLoggerTestSuite) TestWarn() {
-	suite.testLogging("Warn", func(el *emitterLogger, event *types.Event) {
+	suite.testLogging("Warn", func(el *DefaultEmitterLogger, event *Event) {
 		el.Warn(event)
 	})
 }
 
 // TestError verifies the Error method.
 func (suite *EmitterLoggerTestSuite) TestError() {
-	suite.testLogging("Error", func(el *emitterLogger, event *types.Event) {
+	suite.testLogging("Error", func(el *DefaultEmitterLogger, event *Event) {
 		el.Error(event)
 	})
 }
 
 // TestFatal verifies the Fatal method.
 func (suite *EmitterLoggerTestSuite) TestFatal() {
-	suite.testLogging("Fatal", func(el *emitterLogger, event *types.Event) {
+	suite.testLogging("Fatal", func(el *DefaultEmitterLogger, event *Event) {
 		el.Fatal(event)
 	})
 }
@@ -186,7 +186,7 @@ func (suite *EmitterLoggerTestSuite) TestFatal() {
 // TestNilLoggerFactory verifies that if the loggerFactoryFn is nil, only event
 // emission happens.
 func (suite *EmitterLoggerTestSuite) TestNilLoggerFactory() {
-	event := types.NewEvent("Info", "info message")
+	event := NewEvent("Info", "info message")
 	el := NewEmitterLogger(suite.fakeEmitter, nil)
 	el.Info(event)
 	// Verify event is emitted.
@@ -204,7 +204,7 @@ func (suite *EmitterLoggerTestSuite) TestNilLoggerFactory() {
 // TestNilEventEmitter verifies that if the event emitter is nil, logging still
 // occurs.
 func (suite *EmitterLoggerTestSuite) TestNilEventEmitter() {
-	event := types.NewEvent("Warn", "warn message")
+	event := NewEvent("Warn", "warn message")
 	el := NewEmitterLogger(nil, suite.fakeLoggerFactory)
 	el.Warn(event)
 	// No event emitted.
@@ -227,7 +227,7 @@ func (suite *EmitterLoggerTestSuite) TestNilEventEmitter() {
 // and logger factory are nil, nothing happens.
 func (suite *EmitterLoggerTestSuite) TestNilEventEmitterAndLoggerFactory() {
 	el := NewEmitterLogger(nil, nil)
-	event := types.NewEvent("Info", "info message")
+	event := NewEvent("Info", "info message")
 	el.Info(event)
 	assert.Len(
 		suite.T(), suite.fakeEmitter.EmittedEvents, 0,
@@ -242,7 +242,7 @@ func (suite *EmitterLoggerTestSuite) TestNilEventEmitterAndLoggerFactory() {
 // TestNoopEmitterLogger verifies that NewNoopEmitterLogger does nothing.
 func (suite *EmitterLoggerTestSuite) TestNoopEmitterLogger() {
 	el := NewNoopEmitterLogger()
-	event := types.NewEvent("Info", "noop message")
+	event := NewEvent("Info", "noop message")
 	// Calling methods should not panic or emit events.
 	el.Info(event)
 	el.Debug(event)

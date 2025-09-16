@@ -3,8 +3,6 @@ package database
 import (
 	"fmt"
 	"time"
-
-	"github.com/pureapi/pureapi-core/database/types"
 )
 
 // ConnectConfig holds the configuration for the database connection.
@@ -33,7 +31,7 @@ type ConnectConfig struct {
 }
 
 // ConnOpenFn is a function that opens a database connection.
-type ConnOpenFn func(driver string, dsn string) (types.DB, error)
+type ConnOpenFn func(driver string, dsn string) (DB, error)
 
 // Connect establishes a connection to the database using the provided
 // configuration. It will automatically configure the connection based on the
@@ -51,7 +49,7 @@ func Connect(
 	cfg ConnectConfig,
 	connOpenFn ConnOpenFn,
 	dsn string,
-) (types.DB, error) {
+) (DB, error) {
 	db, err := connOpenFn(cfg.Driver, dsn)
 	if err != nil {
 		return nil, fmt.Errorf("Connect: failed to open database: %w", err)
@@ -61,8 +59,8 @@ func Connect(
 
 // configureAndPingConnection configures the connection and pings the database.
 func configureAndPingConnection(
-	db types.DB, cfg ConnectConfig,
-) (types.DB, error) {
+	db DB, cfg ConnectConfig,
+) (DB, error) {
 	configureConnection(db, cfg)
 	if err := db.Ping(); err != nil {
 		return nil, fmt.Errorf(
@@ -73,7 +71,7 @@ func configureAndPingConnection(
 }
 
 // configureConnection sets up the runtime connection limits.
-func configureConnection(db types.DB, cfg ConnectConfig) {
+func configureConnection(db DB, cfg ConnectConfig) {
 	db.SetConnMaxLifetime(cfg.ConnMaxLifetime)
 	db.SetConnMaxIdleTime(cfg.ConnMaxIdleTime)
 	db.SetMaxOpenConns(cfg.MaxOpenConns)

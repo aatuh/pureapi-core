@@ -5,17 +5,15 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/pureapi/pureapi-core/endpoint"
-	endpointtypes "github.com/pureapi/pureapi-core/endpoint/types"
-	"github.com/pureapi/pureapi-core/server"
-	"github.com/pureapi/pureapi-core/util"
-	utiltypes "github.com/pureapi/pureapi-core/util/types"
+	"github.com/aatuh/pureapi-core/endpoint"
+	"github.com/aatuh/pureapi-core/event"
+	"github.com/aatuh/pureapi-core/server"
 )
 
 // This example demonstrates how to use the server package to start a server.
 func main() {
 	// Create the endpoints.
-	endpoints := []endpointtypes.Endpoint{
+	endpoints := []endpoint.Endpoint{
 		endpoint.NewEndpoint("/hello", http.MethodGet).WithHandler(
 			func(w http.ResponseWriter, r *http.Request) {
 				log.Println("Incoming request")
@@ -26,7 +24,7 @@ func main() {
 	// Create the server handler.
 	port := 8080
 	eventEmitter := SetupEventEmitter(port)
-	emitterLogger := util.NewEmitterLogger(eventEmitter, nil)
+	emitterLogger := event.NewEmitterLogger(eventEmitter, nil)
 	handler := server.NewHandler(emitterLogger)
 
 	// Create a HTTP server.
@@ -46,20 +44,20 @@ func main() {
 //   - port: Port for the server.
 //
 // Returns:
-//   - utiltypes.EventEmitter: The event emitter.
-func SetupEventEmitter(port int) utiltypes.EventEmitter {
-	eventEmitter := util.NewEventEmitter()
+//   - util.EventEmitter: The event emitter.
+func SetupEventEmitter(port int) event.EventEmitter {
+	eventEmitter := event.NewEventEmitter()
 	eventEmitter.
 		RegisterListener(
 			server.EventStart,
-			func(event *utiltypes.Event) {
+			func(event *event.Event) {
 				// Using event message directly for logging.
 				log.Printf("Event: %s, port: %d\n", event.Message, port)
 			},
 		).
 		RegisterListener(
 			server.EventRegisterURL,
-			func(event *utiltypes.Event) {
+			func(event *event.Event) {
 				// Using event data to log the path and methods.
 				data := event.Data.(map[string]any)
 				log.Printf(

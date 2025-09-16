@@ -5,7 +5,6 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/pureapi/pureapi-core/database/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
@@ -30,11 +29,11 @@ func (f *FakeTx) Rollback() error {
 }
 
 // For our Transaction tests we don't need to implement Prepare and Exec.
-func (f *FakeTx) Prepare(query string) (types.Stmt, error) {
+func (f *FakeTx) Prepare(query string) (Stmt, error) {
 	return nil, errors.New("not implemented")
 }
 
-func (f *FakeTx) Exec(query string, args ...any) (types.Result, error) {
+func (f *FakeTx) Exec(query string, args ...any) (Result, error) {
 	return nil, errors.New("not implemented")
 }
 
@@ -53,7 +52,7 @@ func TestTransactionTestSuite(t *testing.T) {
 func (s *TransactionTestSuite) TestTransaction_Success() {
 	fakeTx := &FakeTx{}
 	resultValue := 42
-	txFn := func(ctx context.Context, tx types.Tx) (int, error) {
+	txFn := func(ctx context.Context, tx Tx) (int, error) {
 		// Successful transactional work.
 		return resultValue, nil
 	}
@@ -75,7 +74,7 @@ func (s *TransactionTestSuite) TestTransaction_Success() {
 func (s *TransactionTestSuite) TestTransaction_TxFnError() {
 	fakeTx := &FakeTx{}
 	txFnErr := errors.New("txFn error")
-	txFn := func(ctx context.Context, tx types.Tx) (int, error) {
+	txFn := func(ctx context.Context, tx Tx) (int, error) {
 		return 0, txFnErr
 	}
 	res, err := Transaction(context.Background(), fakeTx, txFn)
@@ -97,7 +96,7 @@ func (s *TransactionTestSuite) TestTransaction_TxFnError() {
 func (s *TransactionTestSuite) TestTransaction_Panic() {
 	fakeTx := &FakeTx{}
 	panicValue := "panic occurred"
-	txFn := func(ctx context.Context, tx types.Tx) (int, error) {
+	txFn := func(ctx context.Context, tx Tx) (int, error) {
 		panic(panicValue)
 	}
 	assert.PanicsWithValue(
@@ -120,7 +119,7 @@ func (s *TransactionTestSuite) TestTransaction_Panic() {
 func (s *TransactionTestSuite) TestTransaction_CommitError() {
 	commitErr := errors.New("commit failed")
 	fakeTx := &FakeTx{commitErr: commitErr}
-	txFn := func(ctx context.Context, tx types.Tx) (int, error) {
+	txFn := func(ctx context.Context, tx Tx) (int, error) {
 		return 1, nil
 	}
 	res, err := Transaction(context.Background(), fakeTx, txFn)
@@ -146,7 +145,7 @@ func (s *TransactionTestSuite) TestTransaction_CommitError() {
 func (s *TransactionTestSuite) TestTransaction_RollbackError() {
 	rollbackErr := errors.New("rollback failed")
 	fakeTx := &FakeTx{rollbackErr: rollbackErr}
-	txFn := func(ctx context.Context, tx types.Tx) (int, error) {
+	txFn := func(ctx context.Context, tx Tx) (int, error) {
 		return 0, errors.New("txFn error")
 	}
 	res, err := Transaction(context.Background(), fakeTx, txFn)

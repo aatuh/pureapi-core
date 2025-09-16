@@ -5,7 +5,6 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/pureapi/pureapi-core/endpoint/types"
 	"github.com/stretchr/testify/suite"
 )
 
@@ -17,7 +16,7 @@ func noopMiddleware(next http.Handler) http.Handler {
 }
 
 // makeTestMiddleware returns a middleware that appends markers to events.
-func makeTestMiddleware(label string, events *[]string) types.Middleware {
+func makeTestMiddleware(label string, events *[]string) Middleware {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			*events = append(*events, label+"-pre")
@@ -27,7 +26,7 @@ func makeTestMiddleware(label string, events *[]string) types.Middleware {
 	}
 }
 
-// StackTestSuite is the test suite for the defaultStack.
+// StackTestSuite is the test suite for the DefaultStack.
 type StackTestSuite struct {
 	suite.Suite
 }
@@ -104,7 +103,7 @@ func (s *StackTestSuite) TestAddWrapper() {
 	stack := NewStack()
 	s.Len(stack.Wrappers(), 0)
 	w := NewWrapper("add", noopMiddleware)
-	stack = stack.AddWrapper(w).(*defaultStack)
+	stack = stack.AddWrapper(w).(*DefaultStack)
 	s.Len(stack.Wrappers(), 1)
 	s.Equal("add", stack.Wrappers()[0].ID())
 }

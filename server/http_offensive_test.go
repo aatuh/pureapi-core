@@ -14,8 +14,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/pureapi/pureapi-core/endpoint"
-	"github.com/pureapi/pureapi-core/endpoint/types"
+	"github.com/aatuh/pureapi-core/endpoint"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -32,7 +31,7 @@ func startOffensiveTestServer(t *testing.T) (addr string, shutdown func()) {
 	)
 	handler := NewHandler(nil)
 	// Using port 0 to let the OS pick an available port.
-	server := DefaultHTTPServer(handler, 0, []types.Endpoint{ep})
+	server := DefaultHTTPServer(handler, 0, []endpoint.Endpoint{ep})
 	server.ReadTimeout = 10 * time.Second
 	server.WriteTimeout = 10 * time.Second
 	server.IdleTimeout = 60 * time.Second

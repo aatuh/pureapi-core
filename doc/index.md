@@ -19,7 +19,7 @@ This section will help you set up your development environment, install PureAPI 
 Clone the repository and navigate to the project directory:
 
 ```bash
-git clone https://github.com/pureapi/pureapi-core.git
+git clone https://github.com/aatuh/pureapi-core.git
 cd pureapi-core
 ```
 
@@ -54,9 +54,9 @@ The first rule is that we will have tests... eventually. Apart from that, the fo
 
 - **Security-Critical Testing:** More critical sections should have additional tests to fight against potential vulnerabilities.
 
-- **Private Function Testing:** Direct testing of private functions is secondary and only done when absolutely necessary, and reserved for more stable and critical code.
+- **Private Function Testing:** Direct testing of private functions is secondary and only done when necessary, and reserved for more stable or critical code.
 
-- **Incremental Test Coverage:** Strive for "high enough" test coverage. Higher coverage all the way to 100% can be an ambitious end goal for the most stable code only.
+- **Incremental Test Coverage:** Strive for "high enough" test coverage. Higher coverage all the way to 100% can be an ambitious, yet unnecessary, end goal and reserved only for the most stable code.
 
 - **Integration Testing:** Where it makes sense, integration tests are employed to ensure that different components work together seamlessly.
 

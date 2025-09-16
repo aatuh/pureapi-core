@@ -51,7 +51,7 @@ including but not limited to:
 Clone the repository and navigate to the project directory:
 
 ```bash
-git clone https://github.com/pureapi/pureapi-core.git
+git clone https://github.com/aatuh/pureapi-core.git
 cd pureapi-core
 ```
 

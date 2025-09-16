@@ -8,9 +8,8 @@ import (
 
 	_ "github.com/mattn/go-sqlite3"
 
-	"github.com/pureapi/pureapi-core/database"
-	"github.com/pureapi/pureapi-core/database/types"
-	"github.com/pureapi/pureapi-core/doc/examples"
+	"github.com/aatuh/pureapi-core/database"
+	"github.com/aatuh/pureapi-core/doc/examples"
 )
 
 // Order represents an order in our orders table.
@@ -21,7 +20,7 @@ type Order struct {
 }
 
 // ScanRow scans a database row into the Order.
-func (o *Order) ScanRow(row types.Row) error {
+func (o *Order) ScanRow(row database.Row) error {
 	return row.Scan(&o.ID, &o.Item, &o.Quantity)
 }
 
@@ -81,7 +80,7 @@ func main() {
 // Parameters:
 //   - ctx: The context for the transaction.
 //   - db: The database connection.
-func RunSuccessfulTransaction(ctx context.Context, db types.DB) {
+func RunSuccessfulTransaction(ctx context.Context, db database.DB) {
 	tx, err := BeginTx(ctx, db)
 	if err != nil {
 		log.Fatalf("Error beginning transaction: %v", err)
@@ -108,7 +107,7 @@ func RunSuccessfulTransaction(ctx context.Context, db types.DB) {
 // Parameters:
 //   - ctx: The context for the transaction.
 //   - db: The database connection.
-func RunRolledBackTransaction(ctx context.Context, db types.DB) {
+func RunRolledBackTransaction(ctx context.Context, db database.DB) {
 	tx, err := BeginTx(ctx, db)
 	if err != nil {
 		log.Fatalf("Error beginning transaction: %v", err)
@@ -136,9 +135,9 @@ func RunRolledBackTransaction(ctx context.Context, db types.DB) {
 //   - db: The database connection.
 //
 // Returns:
-//   - types.Tx: The transaction object.
+//   - database.Tx: The transaction object.
 //   - error: An error if the transaction fails.
-func BeginTx(ctx context.Context, db types.DB) (types.Tx, error) {
+func BeginTx(ctx context.Context, db database.DB) (database.Tx, error) {
 	// Begin a transaction.
 	tx, err := db.BeginTx(ctx, nil)
 	if err != nil {
@@ -155,7 +154,7 @@ func BeginTx(ctx context.Context, db types.DB) (types.Tx, error) {
 //
 // Returns:
 //   - int64: The ID of the inserted order.
-func InsertOrder(ctx context.Context, tx types.Tx) int64 {
+func InsertOrder(ctx context.Context, tx database.Tx) int64 {
 	insertSQL := "INSERT INTO orders (item, quantity) VALUES (?, ?);"
 	res, err := database.Exec(
 		ctx, tx, insertSQL, []any{"Book", 5}, &CustomErrorChecker{},
@@ -189,7 +188,7 @@ func InsertOrder(ctx context.Context, tx types.Tx) int64 {
 //   - string: A success message.
 //   - error: An error if the update fails.
 func UpdateOrder(
-	ctx context.Context, tx types.Tx, orderID int64,
+	ctx context.Context, tx database.Tx, orderID int64,
 ) {
 	// Otherwise, update the order.
 	updateSQL := "UPDATE orders SET quantity = ? WHERE id = ?;"
@@ -210,7 +209,7 @@ func UpdateOrder(
 //
 // Parameters:
 //   - db: The database connection.
-func GetOrderCount(ctx context.Context, preparer types.Preparer) {
+func GetOrderCount(ctx context.Context, preparer database.Preparer) {
 	count, err := database.QuerySingleValue(
 		ctx,
 		preparer,
@@ -230,7 +229,7 @@ func GetOrderCount(ctx context.Context, preparer types.Preparer) {
 // Parameters:
 //   - db: The database connection.
 func GetOrderByID(
-	ctx context.Context, preparer types.Preparer, orderID int64,
+	ctx context.Context, preparer database.Preparer, orderID int64,
 ) {
 	order, err := database.QuerySingleEntity(
 		ctx,

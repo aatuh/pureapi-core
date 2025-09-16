@@ -3,9 +3,38 @@ package database
 import (
 	"context"
 	"fmt"
-
-	"github.com/pureapi/pureapi-core/database/types"
 )
+
+// TableNamer provides the table name for an entity.
+type TableNamer interface {
+	TableName() string
+}
+
+// Mutator provides values for insert and update operations.
+type Mutator interface {
+	TableNamer
+	// InsertedValues returns the column names and values for insertion.
+	InsertedValues() ([]string, []any)
+}
+
+// Getter can scan a database row into itself.
+type Getter interface {
+	TableNamer
+	// ScanRow should populate the entity from the given Row.
+	ScanRow(row Row) error
+}
+
+// CRUDEntity is a helper constraint for entities that can be both queried and
+// altered.
+type CRUDEntity interface {
+	Getter
+	Mutator
+}
+
+// ErrorChecker translates database-specific errors into application errors.
+type ErrorChecker interface {
+	Check(err error) error
+}
 
 // Exec prepares and executes a query with parameters, returning the Result.
 //
@@ -21,11 +50,11 @@ import (
 //   - error: An error if the query fails.
 func Exec(
 	ctx context.Context,
-	preparer types.Preparer,
+	preparer Preparer,
 	query string,
 	parameters []any,
-	errorChecker types.ErrorChecker,
-) (types.Result, error) {
+	errorChecker ErrorChecker,
+) (Result, error) {
 	if preparer == nil {
 		return nil, fmt.Errorf("Exec: preparer is nil")
 	}
@@ -55,11 +84,11 @@ func Exec(
 //   - error: An error if the query fails.
 func Query(
 	ctx context.Context,
-	preparer types.Preparer,
+	preparer Preparer,
 	query string,
 	parameters []any,
-	errorChecker types.ErrorChecker,
-) (types.Rows, types.Stmt, error) {
+	errorChecker ErrorChecker,
+) (Rows, Stmt, error) {
 	if preparer == nil {
 		return nil, nil, fmt.Errorf("Query: preparer is nil")
 	}
@@ -87,11 +116,11 @@ func Query(
 //   - error: An error if the query fails.
 func ExecRaw(
 	ctx context.Context,
-	db types.DB,
+	db DB,
 	query string,
 	parameters []any,
-	errorChecker types.ErrorChecker,
-) (types.Result, error) {
+	errorChecker ErrorChecker,
+) (Result, error) {
 	if db == nil {
 		return nil, fmt.Errorf("ExecRaw: db is nil")
 	}
@@ -120,11 +149,11 @@ func ExecRaw(
 //   - error: An error if the query fails.
 func QueryRaw(
 	ctx context.Context,
-	db types.DB,
+	db DB,
 	query string,
 	parameters []any,
-	errorChecker types.ErrorChecker,
-) (types.Rows, error) {
+	errorChecker ErrorChecker,
+) (Rows, error) {
 	if db == nil {
 		return nil, fmt.Errorf("QueryRaw: db is nil")
 	}
@@ -156,10 +185,10 @@ func QueryRaw(
 //   - error: An error if the query or scan fails.
 func QuerySingleValue[T any](
 	ctx context.Context,
-	preparer types.Preparer,
+	preparer Preparer,
 	query string,
 	parameters []any,
-	errorChecker types.ErrorChecker,
+	errorChecker ErrorChecker,
 	factoryFn func() T,
 ) (T, error) {
 	var zero T
@@ -176,7 +205,7 @@ func QuerySingleValue[T any](
 	defer stmt.Close()
 
 	row := stmt.QueryRow(parameters...)
-	result, err := RowToAny(ctx, row, factoryFn)
+	result, err := RowToAnyScalar(ctx, row, factoryFn)
 	if err != nil {
 		if errorChecker != nil {
 			return result, errorChecker.Check(err)
@@ -200,12 +229,12 @@ func QuerySingleValue[T any](
 // Returns:
 //   - T: The entity scanned from the query.
 //   - error: An error if the query fails.
-func QuerySingleEntity[Entity types.Getter](
+func QuerySingleEntity[Entity Getter](
 	ctx context.Context,
-	preparer types.Preparer,
+	preparer Preparer,
 	query string,
 	parameters []any,
-	errorChecker types.ErrorChecker,
+	errorChecker ErrorChecker,
 	factoryFn func() Entity,
 ) (Entity, error) {
 	var zero Entity
@@ -244,12 +273,12 @@ func QuerySingleEntity[Entity types.Getter](
 // Returns:
 //   - []T: A slice of entities scanned from the query.
 //   - error: An error if the query fails.
-func QueryEntities[Entity types.Getter](
+func QueryEntities[Entity Getter](
 	ctx context.Context,
-	preparer types.Preparer,
+	preparer Preparer,
 	query string,
 	parameters []any,
-	errorChecker types.ErrorChecker,
+	errorChecker ErrorChecker,
 	factoryFn func() Entity,
 ) ([]Entity, error) {
 	rows, stmt, err := Query(ctx, preparer, query, parameters, errorChecker)
@@ -274,8 +303,8 @@ func QueryEntities[Entity types.Getter](
 // Returns:
 //   - T: The entity scanned from the row.
 //   - error: An error if the scan fails.
-func RowToEntity[T types.Getter](
-	_ context.Context, row types.Row, factoryFn func() T,
+func RowToEntity[T Getter](
+	_ context.Context, row Row, factoryFn func() T,
 ) (T, error) {
 	var zero T
 	entity := factoryFn()
@@ -288,7 +317,7 @@ func RowToEntity[T types.Getter](
 	return entity, nil
 }
 
-// RowToAny scans a single row into a new entity of type T.
+// RowToAnyScalar scans a single row into a new scalar value of type T.
 // It uses factoryFn to create an instance of T, scans the row into it,
 // and then checks for any scanning errors.
 //
@@ -301,12 +330,11 @@ func RowToEntity[T types.Getter](
 // Returns:
 //   - T: The entity scanned from the row.
 //   - error: An error if scanning fails.
-func RowToAny[T any](
-	_ context.Context, row types.Row, factoryFn func() T,
+func RowToAnyScalar[T any](
+	_ context.Context, row Row, factoryFn func() T,
 ) (T, error) {
 	var zero T
 	entity := factoryFn()
-	// Capture any scanning error.
 	if err := row.Scan(entity); err != nil {
 		return zero, err
 	}
@@ -316,7 +344,7 @@ func RowToAny[T any](
 	return entity, nil
 }
 
-// RowsToAny scans all rows into a slice of entities of type T.
+// RowsToAnyScalars scans all rows into a slice of scalar values of type T.
 // It repeatedly calls RowToAny for each row returned by rows.
 //
 // Parameters:
@@ -328,12 +356,12 @@ func RowToAny[T any](
 // Returns:
 //   - []T: A slice of entities scanned from the rows.
 //   - error: An error if scanning any row fails.
-func RowsToAny[T any](
-	ctx context.Context, rows types.Rows, factoryFn func() T,
+func RowsToAnyScalars[T any](
+	ctx context.Context, rows Rows, factoryFn func() T,
 ) ([]T, error) {
 	var results []T
 	for rows.Next() {
-		entity, err := RowToAny(ctx, rows, factoryFn)
+		entity, err := RowToAnyScalar(ctx, rows, factoryFn)
 		if err != nil {
 			return nil, err
 		}
@@ -355,8 +383,8 @@ func RowsToAny[T any](
 // Returns:
 //   - []T: A slice of entities scanned from the rows.
 //   - error: An error if the scan fails.
-func RowsToEntities[T types.Getter](
-	_ context.Context, rows types.Rows, factoryFn func() T,
+func RowsToEntities[T Getter](
+	_ context.Context, rows Rows, factoryFn func() T,
 ) ([]T, error) {
 	results := []T{}
 	for rows.Next() {
@@ -375,10 +403,10 @@ func RowsToEntities[T types.Getter](
 // doExec executes a query with parameters.
 func doExec(
 	_ context.Context,
-	preparer types.Preparer,
+	preparer Preparer,
 	query string,
 	parameters []any,
-) (types.Result, error) {
+) (Result, error) {
 	stmt, err := preparer.Prepare(query)
 	if err != nil {
 		return nil, err
@@ -393,8 +421,8 @@ func doExec(
 
 // doExecRaw executes a query directly on the DB without preparation.
 func doExecRaw(
-	_ context.Context, db types.DB, query string, parameters []any,
-) (types.Result, error) {
+	_ context.Context, db DB, query string, parameters []any,
+) (Result, error) {
 	result, err := db.Exec(query, parameters...)
 	if err != nil {
 		return nil, err
@@ -405,10 +433,10 @@ func doExecRaw(
 // doQuery executes a query with parameters.
 func doQuery(
 	_ context.Context,
-	preparer types.Preparer,
+	preparer Preparer,
 	query string,
 	parameters []any,
-) (types.Rows, types.Stmt, error) {
+) (Rows, Stmt, error) {
 	stmt, err := preparer.Prepare(query)
 	if err != nil {
 		return nil, nil, err
@@ -429,8 +457,8 @@ func doQuery(
 
 // doQueryRaw executes a query directly on the DB without preparation.
 func doQueryRaw(
-	_ context.Context, db types.DB, query string, parameters []any,
-) (types.Rows, error) {
+	_ context.Context, db DB, query string, parameters []any,
+) (Rows, error) {
 	rows, err := db.Query(query, parameters...)
 	if err != nil {
 		return nil, err

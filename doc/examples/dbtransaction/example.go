@@ -5,9 +5,8 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/pureapi/pureapi-core/database"
-	"github.com/pureapi/pureapi-core/database/types"
-	"github.com/pureapi/pureapi-core/doc/examples"
+	"github.com/aatuh/pureapi-core/database"
+	"github.com/aatuh/pureapi-core/doc/examples"
 
 	// Using the SQLite3 driver as an example.
 	_ "github.com/mattn/go-sqlite3"
@@ -54,9 +53,9 @@ CREATE TABLE products (
 //   - db: The database handle.
 //   - product: The name of the product.
 //   - quantity: The quantity of the product.
-func SuccessfulTransaction(db types.DB, product string, quantity int) {
+func SuccessfulTransaction(db database.DB, product string, quantity int) {
 	// Define a transactional function that inserts and then updates a product.
-	txFn := func(ctx context.Context, tx types.Tx) (int64, error) {
+	txFn := func(ctx context.Context, tx database.Tx) (int64, error) {
 		// Insert a new product.
 		productID, err := InsertProduct(tx, product, quantity)
 		if err != nil {
@@ -96,9 +95,9 @@ func SuccessfulTransaction(db types.DB, product string, quantity int) {
 //   - db: The database handle.
 //   - product: The name of the product.
 //   - quantity: The quantity of the product.
-func FailedTransaction(db types.DB, product string, quantity int) {
+func FailedTransaction(db database.DB, product string, quantity int) {
 	// Define a transactional function that inserts a product and then fails.
-	txFn := func(ctx context.Context, tx types.Tx) (int64, error) {
+	txFn := func(ctx context.Context, tx database.Tx) (int64, error) {
 		// Insert a new product.
 		_, err := InsertProduct(tx, product, quantity)
 		if err != nil {
@@ -135,7 +134,7 @@ func FailedTransaction(db types.DB, product string, quantity int) {
 // Returns:
 //   - int64: The ID of the inserted product.
 //   - error: An error if the insertion fails.
-func InsertProduct(tx types.Tx, product string, quantity int) (int64, error) {
+func InsertProduct(tx database.Tx, product string, quantity int) (int64, error) {
 	// Insert a new product.
 	res, err := tx.Exec(
 		`INSERT INTO products(name, quantity) VALUES(?, ?);`,
@@ -158,7 +157,7 @@ func InsertProduct(tx types.Tx, product string, quantity int) (int64, error) {
 //
 // Parameters:
 //   - db: The database handle.
-func QueryAllProducts(db types.DB) {
+func QueryAllProducts(db database.DB) {
 	log.Println("Querying all products...")
 
 	// Query all products.

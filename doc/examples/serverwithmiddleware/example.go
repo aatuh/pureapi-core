@@ -6,11 +6,10 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/pureapi/pureapi-core/doc/examples"
-	"github.com/pureapi/pureapi-core/endpoint"
-	endpointtypes "github.com/pureapi/pureapi-core/endpoint/types"
-	"github.com/pureapi/pureapi-core/server"
-	"github.com/pureapi/pureapi-core/util"
+	"github.com/aatuh/pureapi-core/doc/examples"
+	"github.com/aatuh/pureapi-core/endpoint"
+	"github.com/aatuh/pureapi-core/event"
+	"github.com/aatuh/pureapi-core/server"
 )
 
 // This example demonstrates how to use middlewares in your endpoints.
@@ -34,7 +33,7 @@ func main() {
 	authStack.InsertAfter("recovery", authWrapper)
 
 	// Create the endpoints with the speicific middlewares
-	endpoints := []endpointtypes.Endpoint{
+	endpoints := []endpoint.Endpoint{
 		endpoint.NewEndpoint("/public", http.MethodGet).WithHandler(
 			func(w http.ResponseWriter, r *http.Request) {
 				// Simulate a panic if "panic" query parameter is set.
@@ -58,7 +57,7 @@ func main() {
 	}
 
 	// Create the server handler with logger.
-	emitterLogger := util.NewEmitterLogger(
+	emitterLogger := event.NewEmitterLogger(
 		nil,
 		examples.LoggerFactoryFn(),
 	)

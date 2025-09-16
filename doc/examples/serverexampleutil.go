@@ -3,7 +3,7 @@ package examples
 import (
 	"fmt"
 
-	"github.com/pureapi/pureapi-core/util/types"
+	"github.com/aatuh/pureapi-core/logging"
 )
 
 // ExampleLogger is an example implementation of the ILogger interface.
@@ -20,9 +20,9 @@ func NewExampleLogger() *ExampleLogger {
 // LoggerFactoryFn is a function that returns a logger.
 //
 // Returns:
-//   - func() types.ILogger: A function that returns a logger.
-func LoggerFactoryFn() func(params ...any) types.ILogger {
-	return func(params ...any) types.ILogger {
+//   - func() logging.ILogger: A function that returns a logger.
+func LoggerFactoryFn() func(params ...any) logging.ILogger {
+	return func(params ...any) logging.ILogger {
 		return NewExampleLogger()
 	}
 }

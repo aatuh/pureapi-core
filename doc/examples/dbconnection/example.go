@@ -4,8 +4,7 @@ import (
 	"log"
 	"time"
 
-	"github.com/pureapi/pureapi-core/database"
-	"github.com/pureapi/pureapi-core/database/types"
+	"github.com/aatuh/pureapi-core/database"
 
 	// Using the SQLite3 driver as an example.
 	_ "github.com/mattn/go-sqlite3"
@@ -13,7 +12,7 @@ import (
 
 // dummyConnectionOpen adapts NewSQLDBAdapter to be used with Connect.
 // It uses the sqlDB DB implementation provided by NewSQLDBAdapter.
-func dummyConnectionOpen(driver, dsn string) (types.DB, error) {
+func dummyConnectionOpen(driver, dsn string) (database.DB, error) {
 	return database.NewSQLDBAdapter(driver, dsn)
 }
 

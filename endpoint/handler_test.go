@@ -7,8 +7,8 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	endpointtypes "github.com/pureapi/pureapi-core/endpoint/types"
-	utiltypes "github.com/pureapi/pureapi-core/util/types"
+	"github.com/aatuh/pureapi-core/apierror"
+	"github.com/aatuh/pureapi-core/event"
 	"github.com/stretchr/testify/suite"
 )
 
@@ -28,10 +28,10 @@ func (d *dummyInputHandler) Handle(
 type dummyErrorHandler struct {
 	capturedErr error
 	retStatus   int
-	retAPIError utiltypes.APIError
+	retAPIError apierror.APIError
 }
 
-func (d *dummyErrorHandler) Handle(err error) (int, utiltypes.APIError) {
+func (d *dummyErrorHandler) Handle(err error) (int, apierror.APIError) {
 	d.capturedErr = err
 	return d.retStatus, d.retAPIError
 }
@@ -82,27 +82,27 @@ func (d *dummyOutputHandlerNoWrite) Handle(
 	return d.retErr
 }
 
-// dummyEmitterLogger implements utiltypes.EmitterLogger.
+// dummyEmitterLogger implements util.EmitterLogger.
 type dummyEmitterLogger struct {
-	events []*utiltypes.Event
+	events []*event.Event
 }
 
-func (d *dummyEmitterLogger) Debug(event *utiltypes.Event, params ...any) {
+func (d *dummyEmitterLogger) Debug(event *event.Event, params ...any) {
 	d.events = append(d.events, event)
 }
-func (d *dummyEmitterLogger) Trace(event *utiltypes.Event, params ...any) {
+func (d *dummyEmitterLogger) Trace(event *event.Event, params ...any) {
 	d.events = append(d.events, event)
 }
-func (d *dummyEmitterLogger) Info(event *utiltypes.Event, params ...any) {
+func (d *dummyEmitterLogger) Info(event *event.Event, params ...any) {
 	d.events = append(d.events, event)
 }
-func (d *dummyEmitterLogger) Warn(event *utiltypes.Event, params ...any) {
+func (d *dummyEmitterLogger) Warn(event *event.Event, params ...any) {
 	d.events = append(d.events, event)
 }
-func (d *dummyEmitterLogger) Error(event *utiltypes.Event, params ...any) {
+func (d *dummyEmitterLogger) Error(event *event.Event, params ...any) {
 	d.events = append(d.events, event)
 }
-func (d *dummyEmitterLogger) Fatal(event *utiltypes.Event, params ...any) {
+func (d *dummyEmitterLogger) Fatal(event *event.Event, params ...any) {
 	d.events = append(d.events, event)
 }
 
@@ -195,7 +195,7 @@ func (s *HandlerTestSuite) Test_Handle() {
 			}
 
 			// Setup output handler.
-			var outHandler endpointtypes.OutputHandler
+			var outHandler OutputHandler
 			if tc.useNoWrite {
 				outHandler = &dummyOutputHandlerNoWrite{retErr: tc.outputRetErr}
 			} else {

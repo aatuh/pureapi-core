@@ -1,11 +1,10 @@
-package util
+package event
 
 import (
 	"sync"
 	"testing"
 	"time"
 
-	"github.com/pureapi/pureapi-core/util/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -13,14 +12,14 @@ import (
 // TestRegisterAndEmit tests registering a listener and emitting an event.
 func TestRegisterAndEmit(t *testing.T) {
 	emitter := NewEventEmitter()
-	ch := make(chan *types.Event, 1)
+	ch := make(chan *Event, 1)
 
 	// Register a listener that sends the event to the channel.
-	emitter.RegisterListener("test", func(e *types.Event) {
+	emitter.RegisterListener("test", func(e *Event) {
 		ch <- e
 	})
 
-	evt := types.NewEvent("test", "foo")
+	evt := NewEvent("test", "foo")
 	emitter.Emit(evt)
 
 	select {
@@ -45,7 +44,7 @@ func TestMultipleListeners(t *testing.T) {
 		wg.Add(1)
 		emitter.RegisterListener(
 			"mult",
-			func(e *types.Event) {
+			func(e *Event) {
 				mu.Lock()
 				count++
 				mu.Unlock()
@@ -54,7 +53,7 @@ func TestMultipleListeners(t *testing.T) {
 		)
 	}
 
-	emitter.Emit(types.NewEvent("mult", "bar"))
+	emitter.Emit(NewEvent("mult", "bar"))
 
 	done := make(chan struct{})
 	go func() {
@@ -81,7 +80,7 @@ func TestRemoveListener(t *testing.T) {
 	wg.Add(2)
 	emitter.RegisterListener(
 		"rm",
-		func(e *types.Event) {
+		func(e *Event) {
 			mu.Lock()
 			callCount++
 			mu.Unlock()
@@ -90,7 +89,7 @@ func TestRemoveListener(t *testing.T) {
 	)
 	emitter.RegisterListener(
 		"rm",
-		func(e *types.Event) {
+		func(e *Event) {
 			mu.Lock()
 			callCount++
 			mu.Unlock()
@@ -122,7 +121,7 @@ func TestRemoveListener(t *testing.T) {
 	mu.Unlock()
 
 	// Emit event.
-	emitter.Emit(types.NewEvent("rm", "remove"))
+	emitter.Emit(NewEvent("rm", "remove"))
 
 	<-time.After(500 * time.Millisecond)
 
@@ -138,16 +137,16 @@ func TestRemoveListener(t *testing.T) {
 // are invoked when an event is emitted.
 func TestGlobalListener(t *testing.T) {
 	emitter := NewEventEmitter()
-	ch := make(chan *types.Event, 2)
+	ch := make(chan *Event, 2)
 
-	emitter.RegisterListener("globaltest", func(e *types.Event) {
+	emitter.RegisterListener("globaltest", func(e *Event) {
 		ch <- e
 	})
-	emitter.RegisterGlobalListener(func(e *types.Event) {
+	emitter.RegisterGlobalListener(func(e *Event) {
 		ch <- e
 	})
 
-	evt := types.NewEvent("globaltest", "global")
+	evt := NewEvent("globaltest", "global")
 	emitter.Emit(evt)
 
 	count := 0
@@ -166,9 +165,9 @@ func TestGlobalListener(t *testing.T) {
 // TestRemoveGlobalListener tests removal of a global listener.
 func TestRemoveGlobalListener(t *testing.T) {
 	emitter := NewEventEmitter()
-	ch := make(chan *types.Event, 1)
+	ch := make(chan *Event, 1)
 
-	emitter.RegisterGlobalListener(func(e *types.Event) {
+	emitter.RegisterGlobalListener(func(e *Event) {
 		ch <- e
 	})
 
@@ -179,7 +178,7 @@ func TestRemoveGlobalListener(t *testing.T) {
 
 	emitter.RemoveGlobalListener(idToRemove)
 
-	emitter.Emit(types.NewEvent("globaltest", "remove"))
+	emitter.Emit(NewEvent("globaltest", "remove"))
 
 	select {
 	case <-ch:
@@ -196,7 +195,7 @@ func TestEmitNoListeners(t *testing.T) {
 	emitter := NewEventEmitter()
 	// Emit an event for which no listener is registered. Should not panic.
 	assert.NotPanics(t, func() {
-		emitter.Emit(types.NewEvent("none", "no listeners"))
+		emitter.Emit(NewEvent("none", "no listeners"))
 	})
 }
 
@@ -208,16 +207,16 @@ func TestWithTimeoutOption(t *testing.T) {
 	require.NotNil(t, emitter.timeout)
 	assert.Equal(t, timeoutDuration, *emitter.timeout)
 
-	ch := make(chan *types.Event, 1)
+	ch := make(chan *Event, 1)
 	// Register a listener that simulates some work.
 	emitter.RegisterListener(
 		"timeout",
-		func(e *types.Event) {
+		func(e *Event) {
 			time.Sleep(2000 * time.Millisecond)
 			ch <- e
 		},
 	)
-	emitter.Emit(types.NewEvent("timeout", "with timeout"))
+	emitter.Emit(NewEvent("timeout", "with timeout"))
 
 	select {
 	case received := <-ch:
@@ -240,7 +239,7 @@ func TestConcurrentEmit(t *testing.T) {
 	for i := 0; i < numListeners; i++ {
 		emitter.RegisterListener(
 			"concurrent",
-			func(e *types.Event) {
+			func(e *Event) {
 				mu.Lock()
 				callCount++
 				mu.Unlock()
@@ -254,7 +253,7 @@ func TestConcurrentEmit(t *testing.T) {
 
 	// Emit events concurrently.
 	for i := 0; i < numEmitters; i++ {
-		go emitter.Emit(types.NewEvent("concurrent", "concurrent event"))
+		go emitter.Emit(NewEvent("concurrent", "concurrent event"))
 	}
 
 	done := make(chan struct{})

@@ -10,8 +10,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/pureapi/pureapi-core/endpoint"
-	"github.com/pureapi/pureapi-core/endpoint/types"
+	"github.com/aatuh/pureapi-core/endpoint"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -56,7 +55,7 @@ func (d *DummyHTTPServer) Shutdown(ctx context.Context) error {
 func TestDefaultHTTPServer(t *testing.T) {
 	// Create a basic server handler.
 	handler := NewHandler(nil)
-	endpoints := []types.Endpoint{
+	endpoints := []endpoint.Endpoint{
 		endpoint.NewEndpoint("/test", "GET"),
 	}
 	port := 8080
@@ -153,7 +152,7 @@ func TestSetupMuxAndHandlers(t *testing.T) {
 			panic("handler panic")
 		},
 	)
-	endpoints := []types.Endpoint{endpointOK, endpointPanic}
+	endpoints := []endpoint.Endpoint{endpointOK, endpointPanic}
 
 	// Use a dummy logger to capture events.
 	handler := NewHandler(nil)
@@ -203,7 +202,7 @@ func TestMultiplexEndpoints(t *testing.T) {
 			w.Write([]byte("B GET"))
 		},
 	)
-	endpoints := []types.Endpoint{end1, end2, end3}
+	endpoints := []endpoint.Endpoint{end1, end2, end3}
 
 	handler := NewHandler(nil)
 	muxed := handler.multiplexEndpoints(endpoints)

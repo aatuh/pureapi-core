@@ -4,50 +4,50 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"fmt"
 	"testing"
 	"time"
 
-	"github.com/pureapi/pureapi-core/database/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 )
 
-// fakePreparer implements types.Preparer.
+// fakePreparer implements Preparer.
 type fakePreparer struct {
-	prepareFunc func(query string) (types.Stmt, error)
+	prepareFunc func(query string) (Stmt, error)
 }
 
-func (fp *fakePreparer) Prepare(query string) (types.Stmt, error) {
+func (fp *fakePreparer) Prepare(query string) (Stmt, error) {
 	if fp.prepareFunc != nil {
 		return fp.prepareFunc(query)
 	}
 	return nil, nil
 }
 
-// fakeStmt implements types.Stmt.
+// fakeStmt implements Stmt.
 type fakeStmt struct {
-	execFunc     func(args ...any) (types.Result, error)
-	queryFunc    func(args ...any) (types.Rows, error)
-	queryRowFunc func(args ...any) types.Row
+	execFunc     func(args ...any) (Result, error)
+	queryFunc    func(args ...any) (Rows, error)
+	queryRowFunc func(args ...any) Row
 	closeFunc    func() error
 }
 
-func (fs *fakeStmt) Exec(args ...any) (types.Result, error) {
+func (fs *fakeStmt) Exec(args ...any) (Result, error) {
 	if fs.execFunc != nil {
 		return fs.execFunc(args...)
 	}
 	return nil, nil
 }
 
-func (fs *fakeStmt) Query(args ...any) (types.Rows, error) {
+func (fs *fakeStmt) Query(args ...any) (Rows, error) {
 	if fs.queryFunc != nil {
 		return fs.queryFunc(args...)
 	}
 	return nil, nil
 }
 
-func (fs *fakeStmt) QueryRow(args ...any) types.Row {
+func (fs *fakeStmt) QueryRow(args ...any) Row {
 	if fs.queryRowFunc != nil {
 		return fs.queryRowFunc(args...)
 	}
@@ -61,7 +61,7 @@ func (fs *fakeStmt) Close() error {
 	return nil
 }
 
-// fakeResult implements types.Result.
+// fakeResult implements Result.
 type fakeResult struct {
 	lastInsertID int64
 	rowsAffected int64
@@ -75,7 +75,7 @@ func (fr *fakeResult) RowsAffected() (int64, error) {
 	return fr.rowsAffected, nil
 }
 
-// fakeRows implements types.Rows.
+// fakeRows implements Rows.
 type fakeRows struct {
 	current   int
 	total     int
@@ -106,7 +106,7 @@ func (fr *fakeRows) Err() error {
 	return fr.returnErr
 }
 
-// fakeRow implements types.Row.
+// fakeRow implements Row.
 type fakeRow struct {
 	scanFunc func(dest ...any) error
 	err      error
@@ -123,28 +123,28 @@ func (fr *fakeRow) Err() error {
 	return fr.err
 }
 
-// fakeDB implements types.DB for ExecRaw and QueryRaw.
+// fakeDB implements DB for ExecRaw and QueryRaw.
 type fakeDB struct {
-	execFunc  func(query string, args ...any) (types.Result, error)
-	queryFunc func(query string, args ...any) (types.Rows, error)
+	execFunc  func(query string, args ...any) (Result, error)
+	queryFunc func(query string, args ...any) (Rows, error)
 	closeFunc func() error
 }
 
-func (fdb *fakeDB) Exec(query string, args ...any) (types.Result, error) {
+func (fdb *fakeDB) Exec(query string, args ...any) (Result, error) {
 	if fdb.execFunc != nil {
 		return fdb.execFunc(query, args...)
 	}
 	return nil, nil
 }
 
-func (fdb *fakeDB) Query(query string, args ...any) (types.Rows, error) {
+func (fdb *fakeDB) Query(query string, args ...any) (Rows, error) {
 	if fdb.queryFunc != nil {
 		return fdb.queryFunc(query, args...)
 	}
 	return nil, nil
 }
 
-func (fdb *fakeDB) QueryRow(query string, args ...any) types.Row {
+func (fdb *fakeDB) QueryRow(query string, args ...any) Row {
 	// Not implemented
 	return nil
 }
@@ -162,15 +162,15 @@ func (fdb *fakeDB) SetConnMaxLifetime(d time.Duration) {}
 func (fdb *fakeDB) SetConnMaxIdleTime(d time.Duration) {}
 func (fdb *fakeDB) SetMaxOpenConns(n int)              {}
 func (fdb *fakeDB) SetMaxIdleConns(n int)              {}
-func (fdb *fakeDB) Prepare(query string) (types.Stmt, error) {
+func (fdb *fakeDB) Prepare(query string) (Stmt, error) {
 	return nil, nil
 }
 func (fdb *fakeDB) BeginTx(ctx context.Context,
-	opts *sql.TxOptions) (types.Tx, error) {
+	opts *sql.TxOptions) (Tx, error) {
 	return nil, errors.New("not implemented")
 }
 
-// fakeErrorChecker implements types.ErrorChecker.
+// fakeErrorChecker implements ErrorChecker.
 type fakeErrorChecker struct {
 	prefix string
 }
@@ -191,7 +191,7 @@ func (fe *fakeEntity) TableName() string {
 	return "fake"
 }
 
-func (fe *fakeEntity) ScanRow(row types.Row) error {
+func (fe *fakeEntity) ScanRow(row Row) error {
 	return row.Scan(&fe.Value)
 }
 
@@ -199,7 +199,7 @@ func (fe *fakeEntity) ScanRow(row types.Row) error {
 type DBOpsTestSuite struct {
 	suite.Suite
 	ctx          context.Context
-	errorChecker types.ErrorChecker
+	errorChecker ErrorChecker
 }
 
 // TestDBOpsTestSuite runs the test suite.
@@ -225,13 +225,13 @@ func (s *DBOpsTestSuite) TestExec_NilPreparer() {
 // successful.
 func (s *DBOpsTestSuite) TestExec_Success() {
 	fakeStmt := &fakeStmt{
-		execFunc: func(args ...any) (types.Result, error) {
+		execFunc: func(args ...any) (Result, error) {
 			return &fakeResult{lastInsertID: 100, rowsAffected: 1}, nil
 		},
 		closeFunc: func() error { return nil },
 	}
 	fakePrep := &fakePreparer{
-		prepareFunc: func(query string) (types.Stmt, error) {
+		prepareFunc: func(query string) (Stmt, error) {
 			return fakeStmt, nil
 		},
 	}
@@ -249,13 +249,13 @@ func (s *DBOpsTestSuite) TestExec_Success() {
 func (s *DBOpsTestSuite) TestExec_ErrorChecker() {
 	fakeErr := errors.New("exec error")
 	fakeStmt := &fakeStmt{
-		execFunc: func(args ...any) (types.Result, error) {
+		execFunc: func(args ...any) (Result, error) {
 			return nil, fakeErr
 		},
 		closeFunc: func() error { return nil },
 	}
 	fakePrep := &fakePreparer{
-		prepareFunc: func(query string) (types.Stmt, error) {
+		prepareFunc: func(query string) (Stmt, error) {
 			return fakeStmt, nil
 		},
 	}
@@ -295,13 +295,13 @@ func (s *DBOpsTestSuite) TestQuery_Success() {
 		},
 	}
 	fakeStmt := &fakeStmt{
-		queryFunc: func(args ...any) (types.Rows, error) {
+		queryFunc: func(args ...any) (Rows, error) {
 			return fakeRowsObj, nil
 		},
 		closeFunc: func() error { return nil },
 	}
 	fakePrep := &fakePreparer{
-		prepareFunc: func(query string) (types.Stmt, error) {
+		prepareFunc: func(query string) (Stmt, error) {
 			return fakeStmt, nil
 		},
 	}
@@ -335,7 +335,7 @@ func (s *DBOpsTestSuite) TestExecRaw_NilDB() {
 // successful.
 func (s *DBOpsTestSuite) TestExecRaw_Success() {
 	fakeDBObj := &fakeDB{
-		execFunc: func(query string, args ...any) (types.Result, error) {
+		execFunc: func(query string, args ...any) (Result, error) {
 			return &fakeResult{lastInsertID: 200, rowsAffected: 1}, nil
 		},
 	}
@@ -376,7 +376,7 @@ func (s *DBOpsTestSuite) TestQueryRaw_Success() {
 		},
 	}
 	fakeDBObj := &fakeDB{
-		queryFunc: func(query string, args ...any) (types.Rows, error) {
+		queryFunc: func(query string, args ...any) (Rows, error) {
 			return fakeRowsObj, nil
 		},
 	}
@@ -417,13 +417,13 @@ func (s *DBOpsTestSuite) TestQuerySingleValue_Success() {
 		},
 	}
 	fakeStmt := &fakeStmt{
-		queryRowFunc: func(args ...any) types.Row {
+		queryRowFunc: func(args ...any) Row {
 			return fakeRowObj
 		},
 		closeFunc: func() error { return nil },
 	}
 	fakePrep := &fakePreparer{
-		prepareFunc: func(query string) (types.Stmt, error) {
+		prepareFunc: func(query string) (Stmt, error) {
 			return fakeStmt, nil
 		},
 	}
@@ -469,13 +469,13 @@ func (s *DBOpsTestSuite) TestQuerySingleEntity_Success() {
 		},
 	}
 	fakeStmt := &fakeStmt{
-		queryRowFunc: func(args ...any) types.Row {
+		queryRowFunc: func(args ...any) Row {
 			return fakeRowObj
 		},
 		closeFunc: func() error { return nil },
 	}
 	fakePrep := &fakePreparer{
-		prepareFunc: func(query string) (types.Stmt, error) {
+		prepareFunc: func(query string) (Stmt, error) {
 			return fakeStmt, nil
 		},
 	}
@@ -514,13 +514,13 @@ func (s *DBOpsTestSuite) TestQueryEntities_Success() {
 		},
 	}
 	fakeStmt := &fakeStmt{
-		queryFunc: func(args ...any) (types.Rows, error) {
+		queryFunc: func(args ...any) (Rows, error) {
 			return fakeRowsObj, nil
 		},
 		closeFunc: func() error { return nil },
 	}
 	fakePrep := &fakePreparer{
-		prepareFunc: func(query string) (types.Stmt, error) {
+		prepareFunc: func(query string) (Stmt, error) {
 			return fakeStmt, nil
 		},
 	}
@@ -536,4 +536,141 @@ func (s *DBOpsTestSuite) TestQueryEntities_Success() {
 	require.Len(s.T(), entities, 2)
 	assert.Equal(s.T(), &fakeEntity{Value: 10}, entities[0])
 	assert.Equal(s.T(), &fakeEntity{Value: 20}, entities[1])
+}
+
+// TestRowToEntity_Success verifies that RowToEntity correctly scans a single row into an entity.
+func TestRowToEntity_Success(t *testing.T) {
+	ctx := context.Background()
+	fake := &fakeRow{
+		scanFunc: func(dest ...any) error {
+			if len(dest) != 2 {
+				return fmt.Errorf("expected 2 dest arguments, got %d", len(dest))
+			}
+			// Assume first dest is *int for ID and second is *string for Name.
+			if idPtr, ok := dest[0].(*int); ok {
+				*idPtr = 123
+			} else {
+				return fmt.Errorf("dest[0] is not *int")
+			}
+			if namePtr, ok := dest[1].(*string); ok {
+				*namePtr = "TestName"
+			} else {
+				return fmt.Errorf("dest[1] is not *string")
+			}
+			return nil
+		},
+		err: nil,
+	}
+
+	entity, err := RowToEntity(ctx, fake, func() *TestEntity { return new(TestEntity) })
+	require.NoError(t, err)
+	require.Equal(t, 123, entity.ID)
+	require.Equal(t, "TestName", entity.Name)
+}
+
+// TestRowToAnyScalar_Success verifies that RowToAnyScalar correctly scans a
+// single scalar value.
+func TestRowToAnyScalar_Success(t *testing.T) {
+	ctx := context.Background()
+	fake := &fakeRow{
+		scanFunc: func(dest ...any) error {
+			if len(dest) != 1 {
+				return fmt.Errorf("expected 1 dest argument, got %d", len(dest))
+			}
+			if intPtr, ok := dest[0].(*int); ok {
+				*intPtr = 42
+				return nil
+			}
+			return fmt.Errorf("dest[0] is not *int")
+		},
+		err: nil,
+	}
+
+	scalar, err := RowToAnyScalar(ctx, fake, func() *int { return new(int) })
+	require.NoError(t, err)
+	require.Equal(t, 42, *scalar)
+}
+
+// TestRowsToAnyScalars_Success verifies that RowsToAnyScalars correctly scans
+// multiple scalar rows.
+func TestRowsToAnyScalars_Success(t *testing.T) {
+	ctx := context.Background()
+	count := 0
+	fakeRowsObj := &fakeRows{
+		total:   2,
+		current: 0,
+		scanFunc: func(dest ...any) error {
+			count++
+			if len(dest) != 1 {
+				return fmt.Errorf("expected 1 dest, got %d", len(dest))
+			}
+			if intPtr, ok := dest[0].(*int); ok {
+				if count == 1 {
+					*intPtr = 10
+				} else {
+					*intPtr = 20
+				}
+				return nil
+			}
+			return fmt.Errorf("dest[0] is not *int")
+		},
+		returnErr: nil,
+	}
+
+	scalars, err := RowsToAnyScalars(
+		ctx, fakeRowsObj, func() *int { return new(int) },
+	)
+	require.NoError(t, err)
+	require.Len(t, scalars, 2)
+	require.Equal(t, 10, *scalars[0])
+	require.Equal(t, 20, *scalars[1])
+}
+
+// TestRowsToEntities_Success verifies that RowsToEntities correctly scans
+// multiple entities.
+func TestRowsToEntities_Success(t *testing.T) {
+	ctx := context.Background()
+	count := 0
+	fakeRowsObj := &fakeRows{
+		total:   2,
+		current: 0,
+		scanFunc: func(dest ...any) error {
+			count++
+			if len(dest) != 2 {
+				return fmt.Errorf(
+					"expected 2 dest arguments, got %d", len(dest),
+				)
+			}
+			if idPtr, ok := dest[0].(*int); ok {
+				if count == 1 {
+					*idPtr = 1
+				} else {
+					*idPtr = 2
+				}
+			} else {
+				return fmt.Errorf("dest[0] is not *int")
+			}
+			if namePtr, ok := dest[1].(*string); ok {
+				if count == 1 {
+					*namePtr = "Alice"
+				} else {
+					*namePtr = "Bob"
+				}
+			} else {
+				return fmt.Errorf("dest[1] is not *string")
+			}
+			return nil
+		},
+		returnErr: nil,
+	}
+
+	entities, err := RowsToEntities(
+		ctx, fakeRowsObj, func() *TestEntity { return new(TestEntity) },
+	)
+	require.NoError(t, err)
+	require.Len(t, entities, 2)
+	require.Equal(t, 1, entities[0].ID)
+	require.Equal(t, "Alice", entities[0].Name)
+	require.Equal(t, 2, entities[1].ID)
+	require.Equal(t, "Bob", entities[1].Name)
 }

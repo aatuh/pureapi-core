@@ -1,49 +1,45 @@
 package endpoint
 
-import (
-	"github.com/pureapi/pureapi-core/endpoint/types"
-)
-
-// defaultWrapper encapsulates a middleware with an identifier and optional
+// DefaultWrapper encapsulates a middleware with an identifier and optional
 // metadata. ID can be used to identify the middleware type (e.g. for reordering
 // or documentation). Data can carry any type of additional information.
-type defaultWrapper struct {
+type DefaultWrapper struct {
 	id         string
-	middleware types.Middleware
+	middleware Middleware
 	data       any
 }
 
-// defaultWrapper implements the Wrapper interface.
-var _ types.Wrapper = (*defaultWrapper)(nil)
+// DefaultWrapper implements the Wrapper interface.
+var _ Wrapper = (*DefaultWrapper)(nil)
 
-// NewWrapper creates a new middleware defaultWrapper.
+// NewWrapper creates a new middleware DefaultWrapper.
 //
 // Parameters:
 //   - m: The middleware to wrap.
 //   - id: The ID of the wrapper.
 //
 // Returns:
-//   - *defaultWrapper: A new defaultWrapper instance.
+//   - *DefaultWrapper: A new DefaultWrapper instance.
 func NewWrapper(
-	id string, middleware types.Middleware,
-) *defaultWrapper {
-	defaultWrapper := &defaultWrapper{
+	id string, middleware Middleware,
+) *DefaultWrapper {
+	DefaultWrapper := &DefaultWrapper{
 		id:         id,
 		middleware: middleware,
 		data:       nil,
 	}
-	return defaultWrapper
+	return DefaultWrapper
 }
 
-// WithData returns a new defaultWrapper with the given data and returns a new
-// defaultWrapper.
+// WithData returns a new DefaultWrapper with the given data and returns a new
+// DefaultWrapper.
 //
 // Parameters:
 //   - data: The data to attach to the wrapper.
 //
 // Returns:
-//   - *defaultWrapper: A new defaultWrapper instance.
-func (m *defaultWrapper) WithData(data any) *defaultWrapper {
+//   - *DefaultWrapper: A new DefaultWrapper instance.
+func (m *DefaultWrapper) WithData(data any) *DefaultWrapper {
 	new := *m
 	new.data = data
 	return &new
@@ -53,7 +49,7 @@ func (m *defaultWrapper) WithData(data any) *defaultWrapper {
 //
 // Returns:
 //   - string: The ID of the wrapper.
-func (m *defaultWrapper) Middleware() types.Middleware {
+func (m *DefaultWrapper) Middleware() Middleware {
 	return m.middleware
 }
 
@@ -61,7 +57,7 @@ func (m *defaultWrapper) Middleware() types.Middleware {
 //
 // Returns:
 //   - string: The ID of the wrapper.
-func (m *defaultWrapper) ID() string {
+func (m *DefaultWrapper) ID() string {
 	return m.id
 }
 
@@ -69,6 +65,6 @@ func (m *defaultWrapper) ID() string {
 //
 // Returns:
 //   - any: The data attached to the wrapper.
-func (m *defaultWrapper) Data() any {
+func (m *DefaultWrapper) Data() any {
 	return m.data
 }

@@ -3,19 +3,34 @@ package endpoint
 import (
 	"fmt"
 	"net/http"
-
-	"github.com/pureapi/pureapi-core/endpoint/types"
 )
+
+// Endpoint represents an API endpoint with middlewares.
+type Definition interface {
+	URL() string
+	Method() string
+	Stack() Stack
+	Handler() http.HandlerFunc
+	WithURL(string) Definition
+	WithMethod(string) Definition
+	WithMiddlewareStack(Stack) Definition
+	WithHandler(http.HandlerFunc) Definition
+}
+
+// Definitions is a new list of endpoint definitions.
+type Definitions interface {
+	ToEndpoints() []Endpoint
+}
 
 // DefaultDefinition represents an endpoint definition.
 type DefaultDefinition struct {
 	URLVal     string
 	MethodVal  string
-	StackVal   types.Stack
+	StackVal   Stack
 	HandlerVal http.HandlerFunc
 }
 
-var _ types.Definition = (*DefaultDefinition)(nil)
+var _ Definition = (*DefaultDefinition)(nil)
 
 // NewDefinition creates a new endpoint definition.
 //
@@ -30,7 +45,7 @@ var _ types.Definition = (*DefaultDefinition)(nil)
 func NewDefinition(
 	url string,
 	method string,
-	stack types.Stack,
+	stack Stack,
 	handler http.HandlerFunc,
 ) *DefaultDefinition {
 	return &DefaultDefinition{
@@ -61,7 +76,7 @@ func (d *DefaultDefinition) Method() string {
 //
 // Returns:
 //   - Stack: The middleware stack of the endpoint.
-func (d *DefaultDefinition) Stack() types.Stack {
+func (d *DefaultDefinition) Stack() Stack {
 	return d.StackVal
 }
 
@@ -96,8 +111,8 @@ func (d *DefaultDefinition) Clone() *DefaultDefinition {
 //   - url: The URL of the endpoint.
 //
 // Returns:
-//   - *DefaultDefinition: A new DefaultDefinition instance.
-func (d *DefaultDefinition) WithURL(url string) *DefaultDefinition {
+//   - Definition: A new Definition.
+func (d *DefaultDefinition) WithURL(url string) Definition {
 	new := *d
 	new.URLVal = defaultURL(url)
 	return &new
@@ -110,8 +125,8 @@ func (d *DefaultDefinition) WithURL(url string) *DefaultDefinition {
 //   - method: The method of the endpoint.
 //
 // Returns:
-//   - *DefaultDefinition: A new DefaultDefinition instance.
-func (d *DefaultDefinition) WithMethod(method string) *DefaultDefinition {
+//   - Definition: A new Definition.
+func (d *DefaultDefinition) WithMethod(method string) Definition {
 	new := *d
 	new.MethodVal = method
 	return &new
@@ -124,10 +139,8 @@ func (d *DefaultDefinition) WithMethod(method string) *DefaultDefinition {
 //   - handler: The handler of the endpoint.
 //
 // Returns:
-//   - *DefaultDefinition: A new DefaultDefinition instance.
-func (d *DefaultDefinition) WithHandler(
-	handler http.HandlerFunc,
-) *DefaultDefinition {
+//   - Definition: A new Definition.
+func (d *DefaultDefinition) WithHandler(handler http.HandlerFunc) Definition {
 	new := *d
 	new.HandlerVal = handler
 	return &new
@@ -140,10 +153,8 @@ func (d *DefaultDefinition) WithHandler(
 //   - stack: The middleware stack.
 //
 // Returns:
-//   - *DefaultDefinition: A new DefaultDefinition instance.
-func (d *DefaultDefinition) WithMiddlewareStack(
-	stack types.Stack,
-) *DefaultDefinition {
+//   - Definition: A new Definition.
+func (d *DefaultDefinition) WithMiddlewareStack(stack Stack) Definition {
 	new := *d
 	new.StackVal = stack
 	return &new
@@ -151,14 +162,14 @@ func (d *DefaultDefinition) WithMiddlewareStack(
 
 // defaultDefinitions is a new list of endpoint definitions.
 type defaultDefinitions struct {
-	definitions []types.Definition
+	definitions []Definition
 }
 
 // DefaultDefinition implements the Definitions interface.
-var _ types.Definitions = (*defaultDefinitions)(nil)
+var _ Definitions = (*defaultDefinitions)(nil)
 
 func NewDefinitions(
-	definitions ...types.Definition,
+	definitions ...Definition,
 ) (*defaultDefinitions, error) {
 	for _, definition := range definitions {
 		if definition == nil {
@@ -180,9 +191,9 @@ func NewDefinitions(
 // Returns:
 //   - *Definitions: A new list of endpoint definitions.
 func (d defaultDefinitions) Add(
-	definitions ...types.Definition,
+	definitions ...Definition,
 ) (*defaultDefinitions, error) {
-	defs := append([]types.Definition{}, d.definitions...)
+	defs := append([]Definition{}, d.definitions...)
 	defs = append(defs, definitions...)
 	return NewDefinitions(defs...)
 }
@@ -192,10 +203,10 @@ func (d defaultDefinitions) Add(
 //
 // Returns:
 //   - []api.Endpoint: a list of API endpoints.
-func (d defaultDefinitions) ToEndpoints() []types.Endpoint {
-	endpoints := []types.Endpoint{}
+func (d defaultDefinitions) ToEndpoints() []Endpoint {
+	endpoints := []Endpoint{}
 	for _, definition := range d.definitions {
-		middlewares := []types.Middleware{}
+		middlewares := []Middleware{}
 		if definition.Stack() != nil {
 			for _, mw := range definition.Stack().Wrappers() {
 				middlewares = append(middlewares, mw.Middleware())

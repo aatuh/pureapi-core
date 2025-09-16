@@ -5,36 +5,35 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/pureapi/pureapi-core/endpoint/types"
 	"github.com/stretchr/testify/suite"
 )
 
-// dummyStack is a minimal implementation of types.Stack.
+// dummyStack is a minimal implementation of Stack.
 type dummyStack struct {
 	id string
 }
 
-func (ds *dummyStack) Wrappers() []types.Wrapper { return nil }
-func (ds *dummyStack) Middlewares() types.Middlewares {
+func (ds *dummyStack) Wrappers() []Wrapper { return nil }
+func (ds *dummyStack) Middlewares() Middlewares {
 	return nil
 }
-func (ds *dummyStack) Clone() types.Stack {
+func (ds *dummyStack) Clone() Stack {
 	return &dummyStack{id: ds.id + "_clone"}
 }
-func (ds *dummyStack) AddWrapper(w types.Wrapper) types.Stack {
+func (ds *dummyStack) AddWrapper(w Wrapper) Stack {
 	return nil
 }
 func (ds *dummyStack) InsertBefore(
-	id string, w types.Wrapper,
-) (types.Stack, bool) {
+	id string, w Wrapper,
+) (Stack, bool) {
 	return nil, false
 }
 func (ds *dummyStack) InsertAfter(
-	id string, w types.Wrapper,
-) (types.Stack, bool) {
+	id string, w Wrapper,
+) (Stack, bool) {
 	return nil, false
 }
-func (ds *dummyStack) Remove(id string) (types.Stack, bool) {
+func (ds *dummyStack) Remove(id string) (Stack, bool) {
 	return nil, false
 }
 

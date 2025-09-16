@@ -1,42 +1,91 @@
-package util
+package event
 
 import (
 	"fmt"
 	"os"
 	"sync"
 	"time"
-
-	"github.com/pureapi/pureapi-core/util/types"
 )
+
+// EventType represents the type of event.
+type EventType string
+
+// Event represents an emitted event.
+type Event struct {
+	Type    EventType
+	Message string
+	Data    any
+}
+
+// NewEvent creates a new event.
+//
+// Parameters:
+//   - eventType: The type of the event.
+//   - message: The message of the event.
+//   - data: The optional data of the event.
+//
+// Returns:
+//   - *Event: A new Event instance.
+func NewEvent(eventType EventType, message string) *Event {
+	return &Event{
+		Type:    eventType,
+		Message: message,
+		Data:    nil,
+	}
+}
+
+// WithData sets the data of the event. It returns a new event with the data
+// set.
+//
+// Parameters:
+//   - data: The data to set.
+//
+// Returns:
+//   - *Event: A new Event instance with the data set.
+func (event *Event) WithData(data any) *Event {
+	new := *event
+	new.Data = data
+	return &new
+}
+
+// EventCallback is a function that handles an event.
+type EventCallback func(event *Event)
+
+// EventEmitter is responsible for emitting events.
+type EventEmitter interface {
+	RegisterListener(eventType EventType, callback EventCallback) EventEmitter
+	RemoveListener(eventType EventType, id string)
+	Emit(event *Event)
+}
 
 // eventListener wraps a listener callback with an ID.
 type eventListener struct {
 	id       string
-	callback func(*types.Event)
+	callback func(*Event)
 }
 
 // EventEmitter is responsible for emitting events.
-type defaultEventEmitter struct {
-	listeners       map[types.EventType][]eventListener
+type DefaultEventEmitter struct {
+	listeners       map[EventType][]eventListener
 	globalListeners []eventListener
 	mu              sync.RWMutex   // Mutex for thread safety when emitting events.
 	counter         int            // Used to generate unique IDs for listeners.
 	timeout         *time.Duration // Optional timeout for each callback.
 }
 
-// defaultEventEmitter implements the EventEmitter interface.
-var _ types.EventEmitter = (*defaultEventEmitter)(nil)
+// DefaultEventEmitter implements the EventEmitter interface.
+var _ EventEmitter = (*DefaultEventEmitter)(nil)
 
-// NewEventEmitter creates a new defaultEventEmitter.
+// NewEventEmitter creates a new DefaultEventEmitter.
 //
 // Parameters:
-//   - opts: Options to configure the defaultEventEmitter.
+//   - opts: Options to configure the DefaultEventEmitter.
 //
 // Returns:
-//   - *defaultEventEmitter: A new defaultEventEmitter.
-func NewEventEmitter() *defaultEventEmitter {
-	eventEmitter := &defaultEventEmitter{
-		listeners:       make(map[types.EventType][]eventListener),
+//   - *DefaultEventEmitter: A new DefaultEventEmitter.
+func NewEventEmitter() *DefaultEventEmitter {
+	eventEmitter := &DefaultEventEmitter{
+		listeners:       make(map[EventType][]eventListener),
 		globalListeners: []eventListener{},
 		mu:              sync.RWMutex{},
 		counter:         0,
@@ -53,10 +102,10 @@ func NewEventEmitter() *defaultEventEmitter {
 //   - timeout: The timeout duration.
 //
 // Returns:
-//   - *defaultEventEmitter: A new defaultEventEmitter.
-func (e *defaultEventEmitter) WithTimeout(
+//   - *DefaultEventEmitter: A new DefaultEventEmitter.
+func (e *DefaultEventEmitter) WithTimeout(
 	timeout *time.Duration,
-) *defaultEventEmitter {
+) *DefaultEventEmitter {
 	new := NewEventEmitter()
 	new.timeout = timeout
 	return new
@@ -70,9 +119,9 @@ func (e *defaultEventEmitter) WithTimeout(
 //
 // Returns:
 //   - *eventEmitter: The eventEmitter.
-func (e *defaultEventEmitter) RegisterListener(
-	eventType types.EventType, callback types.EventCallback,
-) types.EventEmitter {
+func (e *DefaultEventEmitter) RegisterListener(
+	eventType EventType, callback EventCallback,
+) EventEmitter {
 	// Generate a unique ID for the listener.
 	e.mu.Lock()
 	defer e.mu.Unlock()
@@ -95,8 +144,8 @@ func (e *defaultEventEmitter) RegisterListener(
 //
 // Returns:
 //   - *eventEmitter: The eventEmitter.
-func (e *defaultEventEmitter) RemoveListener(
-	eventType types.EventType, id string,
+func (e *DefaultEventEmitter) RemoveListener(
+	eventType EventType, id string,
 ) {
 	e.mu.Lock()
 	defer e.mu.Unlock()
@@ -118,9 +167,9 @@ func (e *defaultEventEmitter) RemoveListener(
 //
 // Returns:
 //   - *eventEmitter: The eventEmitter.
-func (e *defaultEventEmitter) RegisterGlobalListener(
-	callback types.EventCallback,
-) types.EventEmitter {
+func (e *DefaultEventEmitter) RegisterGlobalListener(
+	callback EventCallback,
+) EventEmitter {
 	e.mu.Lock()
 	defer e.mu.Unlock()
 	e.counter++
@@ -139,7 +188,7 @@ func (e *defaultEventEmitter) RegisterGlobalListener(
 //
 // Returns:
 //   - *eventEmitter: The eventEmitter.
-func (e *defaultEventEmitter) RemoveGlobalListener(id string) {
+func (e *DefaultEventEmitter) RemoveGlobalListener(id string) {
 	e.mu.Lock()
 	defer e.mu.Unlock()
 	for i, l := range e.globalListeners {
@@ -161,7 +210,7 @@ func (e *defaultEventEmitter) RemoveGlobalListener(id string) {
 //
 // Returns:
 //   - *eventEmitter: The eventEmitter.
-func (e *defaultEventEmitter) Emit(event *types.Event) {
+func (e *DefaultEventEmitter) Emit(event *Event) {
 	e.mu.RLock()
 	listeners := e.listeners[event.Type]
 	globalListeners := e.globalListeners
@@ -174,13 +223,13 @@ func (e *defaultEventEmitter) Emit(event *types.Event) {
 	}
 	// Emit to type-specific listeners.
 	for _, l := range listeners {
-		go func(cb types.EventCallback, to *time.Duration) {
+		go func(cb EventCallback, to *time.Duration) {
 			runCallback(event, cb, to)
 		}(l.callback, timeout)
 	}
 	// Emit to global listeners.
 	for _, l := range globalListeners {
-		go func(cb types.EventCallback, to *time.Duration) {
+		go func(cb EventCallback, to *time.Duration) {
 			runCallback(event, cb, to)
 		}(l.callback, timeout)
 	}
@@ -188,7 +237,7 @@ func (e *defaultEventEmitter) Emit(event *types.Event) {
 
 // runCallback runs a callback with an optional timeout.
 func runCallback(
-	event *types.Event, cb types.EventCallback, timeout *time.Duration,
+	event *Event, cb EventCallback, timeout *time.Duration,
 ) {
 	done := make(chan struct{})
 	go func() {

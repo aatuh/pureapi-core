@@ -1,4 +1,4 @@
-module github.com/pureapi/pureapi-core
+module github.com/aatuh/pureapi-core
 
 go 1.24.0
 

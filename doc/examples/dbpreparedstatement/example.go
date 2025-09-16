@@ -3,8 +3,8 @@ package main
 import (
 	"log"
 
+	"github.com/aatuh/pureapi-core/doc/examples"
 	_ "github.com/mattn/go-sqlite3"
-	"github.com/pureapi/pureapi-core/doc/examples"
 )
 
 // This example shows how to use a prepared statement using the Prepare

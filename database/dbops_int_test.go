@@ -6,7 +6,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/pureapi/pureapi-core/database/types"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 
@@ -14,7 +13,7 @@ import (
 )
 
 // TestEntity is a simple type used for scanning rows into an entity.
-// It implements the types.Getter interface.
+// It implements the Getter interface.
 type TestEntity struct {
 	ID   int
 	Name string
@@ -24,7 +23,7 @@ func (te *TestEntity) TableName() string {
 	return "test_entities"
 }
 
-func (te *TestEntity) ScanRow(row types.Row) error {
+func (te *TestEntity) ScanRow(row Row) error {
 	return row.Scan(&te.ID, &te.Name)
 }
 
@@ -32,7 +31,7 @@ func (te *TestEntity) ScanRow(row types.Row) error {
 type DBOpsIntTestSuite struct {
 	suite.Suite
 	ctx context.Context
-	db  types.DB
+	db  DB
 }
 
 // TestDBOpsIntTestSuite runs the test suite.
@@ -247,7 +246,7 @@ func (u *User) TableName() string {
 	return "users"
 }
 
-func (u *User) ScanRow(row types.Row) error {
+func (u *User) ScanRow(row Row) error {
 	return row.Scan(&u.ID, &u.Name)
 }
 
@@ -372,7 +371,7 @@ func (s *DBOpsIntTestSuite) Test_RowToAny() {
 	require.True(s.T(), lastID > 0)
 
 	row := s.db.QueryRow("SELECT val FROM test_scalar WHERE rowid = ?", lastID)
-	result, err := RowToAny(s.ctx, row, func() *int { return new(int) })
+	result, err := RowToAnyScalar(s.ctx, row, func() *int { return new(int) })
 	require.NoError(s.T(), err)
 	require.Equal(s.T(), 777, *result)
 }
@@ -398,7 +397,7 @@ func (s *DBOpsIntTestSuite) Test_RowsToAny() {
 	require.NoError(s.T(), err)
 	defer rows.Close()
 
-	results, err := RowsToAny(s.ctx, rows, func() *int { return new(int) })
+	results, err := RowsToAnyScalars(s.ctx, rows, func() *int { return new(int) })
 	require.NoError(s.T(), err)
 	require.Len(s.T(), results, len(expected))
 	for i, r := range results {

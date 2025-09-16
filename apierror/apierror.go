@@ -1,11 +1,18 @@
-package util
+package apierror
 
 import (
 	"encoding/json"
 	"fmt"
-
-	"github.com/pureapi/pureapi-core/util/types"
 )
+
+// APIError represents a custom error type.
+type APIError interface {
+	Error() string
+	ID() string
+	Data() any
+	Message() string
+	Origin() string
+}
 
 // DefaultAPIError represents a JSON marshalable custom error type.
 type DefaultAPIError struct {
@@ -15,7 +22,7 @@ type DefaultAPIError struct {
 	ErrOrigin  string `json:"origin,omitempty"`
 }
 
-var _ types.APIError = (*DefaultAPIError)(nil)
+var _ APIError = (*DefaultAPIError)(nil)
 
 // NewAPIError returns a new error with the given ID.
 //
@@ -40,7 +47,7 @@ func NewAPIError(id string) *DefaultAPIError {
 //
 // Returns:
 //   - *defaultAPIError: A new defaultAPIError instance.
-func APIErrorFrom(err types.APIError) *DefaultAPIError {
+func APIErrorFrom(err APIError) *DefaultAPIError {
 	return &DefaultAPIError{
 		ErrID:      err.ID(),
 		ErrData:    err.Data(),

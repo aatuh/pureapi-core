@@ -10,8 +10,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/pureapi/pureapi-core/endpoint"
-	"github.com/pureapi/pureapi-core/endpoint/types"
+	"github.com/aatuh/pureapi-core/endpoint"
 	"github.com/stretchr/testify/require"
 )
 
@@ -75,7 +74,7 @@ func startFuzzTestServer(tb testing.TB) (addr string, shutdown func()) {
 	)
 	handler := NewHandler(nil)
 	// Use port 0 to let the OS select an available port.
-	server := DefaultHTTPServer(handler, 0, []types.Endpoint{ep})
+	server := DefaultHTTPServer(handler, 0, []endpoint.Endpoint{ep})
 	ln, err := net.Listen("tcp", server.Addr)
 	require.NoError(tb, err)
 	go server.Serve(ln)

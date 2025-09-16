@@ -4,20 +4,44 @@ import (
 	"fmt"
 	"net/http"
 
-	endpointtypes "github.com/pureapi/pureapi-core/endpoint/types"
-	"github.com/pureapi/pureapi-core/util"
-	utiltypes "github.com/pureapi/pureapi-core/util/types"
+	"github.com/aatuh/pureapi-core/apierror"
+	"github.com/aatuh/pureapi-core/event"
 )
 
 // Constants for event types.
 const (
-	// EventError event is emitted when an error occurs during request
-	// processing.
-	EventError utiltypes.EventType = "event_error"
+	// EventError is emitted when an error occurs during request processing.
+	EventError event.EventType = "event_error"
 
 	// EventOutputError event is emitted when an output error occurs.
-	EventOutputError utiltypes.EventType = "event_output_error"
+	EventOutputError event.EventType = "event_output_error"
 )
+
+// InputHandler defines how to process the request input.
+type InputHandler[Input any] interface {
+	Handle(w http.ResponseWriter, r *http.Request) (*Input, error)
+}
+
+// Handler is an interface for handling endpoints.
+type Handler[Input any] interface {
+	Handle(w http.ResponseWriter, r *http.Request)
+}
+
+// ErrorHandler handles apierror and maps them to appropriate HTTP responses.
+type ErrorHandler interface {
+	Handle(err error) (int, apierror.APIError)
+}
+
+// OutputHandler processes and writes the endpoint response.
+type OutputHandler interface {
+	Handle(
+		w http.ResponseWriter,
+		r *http.Request,
+		out any,
+		outputError error,
+		statusCode int,
+	) error
+}
 
 // HandlerLogicFn is a function for handling endpoint logic.
 type HandlerLogicFn[Input any] func(
@@ -27,11 +51,11 @@ type HandlerLogicFn[Input any] func(
 // DefaultHandler represents an endpoint with input, business logic, and
 // output.
 type DefaultHandler[Input any] struct {
-	inputHandler   endpointtypes.InputHandler[Input]
+	inputHandler   InputHandler[Input]
 	handlerLogicFn HandlerLogicFn[Input]
-	errorHandler   endpointtypes.ErrorHandler
-	outputHandler  endpointtypes.OutputHandler
-	emitterLogger  utiltypes.EmitterLogger
+	errorHandler   ErrorHandler
+	outputHandler  OutputHandler
+	emitterLogger  event.EmitterLogger
 }
 
 // NewHandler creates a new handler. During requst handling it
@@ -48,10 +72,10 @@ type DefaultHandler[Input any] struct {
 // Returns:
 //   - *DefaultHandler: A new DefaultHandler instance.
 func NewHandler[Input any](
-	inputHandler endpointtypes.InputHandler[Input],
+	inputHandler InputHandler[Input],
 	handlerLogicFn HandlerLogicFn[Input],
-	errorHandler endpointtypes.ErrorHandler,
-	outputHandler endpointtypes.OutputHandler,
+	errorHandler ErrorHandler,
+	outputHandler OutputHandler,
 ) *DefaultHandler[Input] {
 	return &DefaultHandler[Input]{
 		inputHandler:   inputHandler,
@@ -71,7 +95,7 @@ func NewHandler[Input any](
 // Returns:
 //   - *DefaultHandler: A new handler instance.
 func (h *DefaultHandler[Input]) WithInputHandler(
-	inputHandler endpointtypes.InputHandler[Input],
+	inputHandler InputHandler[Input],
 ) *DefaultHandler[Input] {
 	new := *h
 	new.inputHandler = inputHandler
@@ -103,7 +127,7 @@ func (h *DefaultHandler[Input]) WithHandlerLogicFn(
 // Returns:
 //   - *DefaultHandler: A new handler instance.
 func (h *DefaultHandler[Input]) WithErrorHandler(
-	errorHandler endpointtypes.ErrorHandler,
+	errorHandler ErrorHandler,
 ) *DefaultHandler[Input] {
 	new := *h
 	new.errorHandler = errorHandler
@@ -119,7 +143,7 @@ func (h *DefaultHandler[Input]) WithErrorHandler(
 // Returns:
 //   - *DefaultHandler: A new handler instance.
 func (h *DefaultHandler[Input]) WithEmitterLogger(
-	emitterLogger utiltypes.EmitterLogger,
+	emitterLogger event.EmitterLogger,
 ) *DefaultHandler[Input] {
 	new := *h
 	if new.emitterLogger == nil {
@@ -162,7 +186,7 @@ func (h *DefaultHandler[Input]) handleError(
 	// Handle error.
 	statusCode, outError := h.errorHandler.Handle(err)
 	h.emitterLogger.Trace(
-		utiltypes.NewEvent(
+		event.NewEvent(
 			EventError,
 			fmt.Sprintf(
 				"Error, status: %d, err: %s, out: %s",
@@ -188,7 +212,7 @@ func (h *DefaultHandler[Input]) handleOutput(
 	); err != nil {
 		// If error handling output, write 500 error.
 		h.emitterLogger.Trace(
-			utiltypes.NewEvent(
+			event.NewEvent(
 				EventOutputError,
 				fmt.Sprintf("Error handling output: %+v", err),
 			).WithData(map[string]any{"err": err}),
@@ -199,6 +223,6 @@ func (h *DefaultHandler[Input]) handleOutput(
 }
 
 // defaultEmitterLogger returns a noop emitter logger.
-func defaultEmitterLogger() utiltypes.EmitterLogger {
-	return util.NewNoopEmitterLogger()
+func defaultEmitterLogger() event.EmitterLogger {
+	return event.NewNoopEmitterLogger()
 }

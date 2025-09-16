@@ -5,9 +5,66 @@ import (
 	"database/sql"
 	"fmt"
 	"time"
-
-	"github.com/pureapi/pureapi-core/database/types"
 )
+
+// DB is an interface for core database operations and connection management.
+type DB interface {
+	Preparer
+	UnderlyingDB() *sql.DB
+	Ping() error
+	SetConnMaxLifetime(d time.Duration)
+	SetConnMaxIdleTime(d time.Duration)
+	SetMaxOpenConns(n int)
+	SetMaxIdleConns(n int)
+	BeginTx(ctx context.Context, opts *sql.TxOptions) (Tx, error)
+	Exec(query string, args ...any) (Result, error)
+	Query(query string, args ...any) (Rows, error)
+	QueryRow(query string, args ...any) Row
+	Close() error
+}
+
+// Preparer is an interface for preparing SQL statements.
+type Preparer interface {
+	Prepare(query string) (Stmt, error)
+}
+
+// Tx is an interface for transaction operations.
+type Tx interface {
+	Preparer
+	Commit() error
+	Rollback() error
+	Exec(query string, args ...any) (Result, error)
+}
+
+// Stmt wraps *sql.Stmt methods for executing prepared statements.
+type Stmt interface {
+	Close() error
+	QueryRow(args ...any) Row
+	Exec(args ...any) (Result, error)
+	Query(args ...any) (Rows, error)
+}
+
+// Rows wraps *sql.Rows for scanning multiple results.
+type Rows interface {
+	Next() bool
+	// Scan scans the rows into dest values.
+	Scan(dest ...any) error
+	Close() error
+	Err() error
+}
+
+// Row wraps *sql.Row for scanning a single result.
+type Row interface {
+	// Scan scans the row into dest values.
+	Scan(dest ...any) error
+	Err() error
+}
+
+// Result wraps *sql.Result for retrieving metadata of write operations.
+type Result interface {
+	LastInsertId() (int64, error)
+	RowsAffected() (int64, error)
+}
 
 // sqlDB wraps *sql.DB for database operations.
 type sqlDB struct {
@@ -15,7 +72,7 @@ type sqlDB struct {
 }
 
 // sqlDB implements DB interface.
-var _ types.DB = (*sqlDB)(nil)
+var _ DB = (*sqlDB)(nil)
 
 // NewSQLDB creates a new instance of SQLDB and connects to the database using
 // the provided driver and connection string.
@@ -46,7 +103,7 @@ func NewSQLDB(driver string, dsn string) (*sqlDB, error) {
 // Returns:
 //   - DB: A new DB instance.
 //   - error: An error if the connection fails.
-func NewSQLDBAdapter(driver string, dsn string) (types.DB, error) {
+func NewSQLDBAdapter(driver string, dsn string) (DB, error) {
 	db, err := NewSQLDB(driver, dsn)
 	if err != nil {
 		return nil, fmt.Errorf("NewSQLDBAdapter error: %w", err)
@@ -110,7 +167,7 @@ func (db *sqlDB) SetMaxIdleConns(n int) {
 // Returns:
 //   - Stmt: The prepared statement.
 //   - error: An error if the statement cannot be prepared.
-func (db *sqlDB) Prepare(query string) (types.Stmt, error) {
+func (db *sqlDB) Prepare(query string) (Stmt, error) {
 	stmt, err := db.DB.Prepare(query)
 	if err != nil {
 		return nil, fmt.Errorf("DB.Prepare error: %w", err)
@@ -129,7 +186,7 @@ func (db *sqlDB) Prepare(query string) (types.Stmt, error) {
 //   - error: An error if the transaction cannot be created.
 func (db *sqlDB) BeginTx(
 	ctx context.Context, opts *sql.TxOptions,
-) (types.Tx, error) {
+) (Tx, error) {
 	tx, err := db.DB.BeginTx(ctx, opts)
 	if err != nil {
 		return nil, fmt.Errorf("DB.BeginTx error: %w", err)
@@ -146,7 +203,7 @@ func (db *sqlDB) BeginTx(
 // Returns:
 //   - Result: The result of the query.
 //   - error: An error if the query fails.
-func (db *sqlDB) Exec(query string, args ...any) (types.Result, error) {
+func (db *sqlDB) Exec(query string, args ...any) (Result, error) {
 	res, err := db.DB.Exec(query, args...)
 	if err != nil {
 		return nil, fmt.Errorf("DB.Exec error: %w", err)
@@ -163,7 +220,7 @@ func (db *sqlDB) Exec(query string, args ...any) (types.Result, error) {
 // Returns:
 //   - Rows: The rows of the query.
 //   - error: An error if the query fails.
-func (db *sqlDB) Query(query string, args ...any) (types.Rows, error) {
+func (db *sqlDB) Query(query string, args ...any) (Rows, error) {
 	rows, err := db.DB.Query(query, args...)
 	if err != nil {
 		return nil, fmt.Errorf("DB.Query error: %w", err)
@@ -179,7 +236,7 @@ func (db *sqlDB) Query(query string, args ...any) (types.Rows, error) {
 //
 // Returns:
 //   - Row: The row of the query.
-func (db *sqlDB) QueryRow(query string, args ...any) types.Row {
+func (db *sqlDB) QueryRow(query string, args ...any) Row {
 	return db.DB.QueryRow(query, args...)
 }
 
@@ -207,7 +264,7 @@ func (s *RealStmt) Close() error {
 //
 // Returns:
 //   - Row: The row of the query.
-func (s *RealStmt) QueryRow(args ...any) types.Row {
+func (s *RealStmt) QueryRow(args ...any) Row {
 	return s.Stmt.QueryRow(args...)
 }
 
@@ -218,7 +275,7 @@ func (s *RealStmt) QueryRow(args ...any) types.Row {
 //
 // Returns:
 //   - Result: The result of the query.
-func (s *RealStmt) Exec(args ...any) (types.Result, error) {
+func (s *RealStmt) Exec(args ...any) (Result, error) {
 	res, err := s.Stmt.Exec(args...)
 	if err != nil {
 		return nil, fmt.Errorf("Stmt.Exec error: %w", err)
@@ -233,7 +290,7 @@ func (s *RealStmt) Exec(args ...any) (types.Result, error) {
 //
 // Returns:
 //   - Rows: The rows of the query.
-func (s *RealStmt) Query(args ...any) (types.Rows, error) {
+func (s *RealStmt) Query(args ...any) (Rows, error) {
 	rows, err := s.Stmt.Query(args...)
 	if err != nil {
 		return nil, fmt.Errorf("Stmt.Query error: %w", err)
@@ -379,7 +436,7 @@ func (tx *RealTx) Rollback() error {
 // Returns:
 //   - Stmt: The prepared statement.
 //   - error: An error if the statement cannot be prepared.
-func (tx *RealTx) Prepare(query string) (types.Stmt, error) {
+func (tx *RealTx) Prepare(query string) (Stmt, error) {
 	stmt, err := tx.Tx.Prepare(query)
 	if err != nil {
 		return nil, fmt.Errorf("Tx.Prepare error: %w", err)
@@ -396,7 +453,7 @@ func (tx *RealTx) Prepare(query string) (types.Stmt, error) {
 // Returns:
 //   - Result: The result of the query.
 //   - error: An error if the query cannot be executed.
-func (tx *RealTx) Exec(query string, args ...any) (types.Result, error) {
+func (tx *RealTx) Exec(query string, args ...any) (Result, error) {
 	res, err := tx.Tx.Exec(query, args...)
 	if err != nil {
 		return nil, fmt.Errorf("Tx.Exec error: %w", err)

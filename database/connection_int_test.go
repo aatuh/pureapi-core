@@ -1,12 +1,9 @@
-// connection_int_test.go
-package database_test
+package database
 
 import (
 	"testing"
 	"time"
 
-	"github.com/pureapi/pureapi-core/database"
-	"github.com/pureapi/pureapi-core/database/types"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 
@@ -17,8 +14,8 @@ import (
 // connection.
 type ConnectionIntTestSuite struct {
 	suite.Suite
-	db  types.DB
-	cfg database.ConnectConfig
+	db  DB
+	cfg ConnectConfig
 }
 
 // TestConnectionIntTestSuite runs the test suite.
@@ -28,7 +25,7 @@ func TestConnectionIntTestSuite(t *testing.T) {
 
 // SetupTest initializes the test by creating an in-memory SQLite3 database.
 func (s *ConnectionIntTestSuite) SetupTest() {
-	s.cfg = database.ConnectConfig{
+	s.cfg = ConnectConfig{
 		Driver:          "sqlite3",
 		ConnMaxLifetime: 5 * time.Minute,
 		ConnMaxIdleTime: 2 * time.Minute,
@@ -37,9 +34,9 @@ func (s *ConnectionIntTestSuite) SetupTest() {
 	}
 	var err error
 	// Ensure that in-memory databases are always shared.
-	s.db, err = database.Connect(
+	s.db, err = Connect(
 		s.cfg,
-		database.NewSQLDBAdapter,
+		NewSQLDBAdapter,
 		"file::memory:?cache=shared",
 	)
 	require.NoError(s.T(), err)

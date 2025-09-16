@@ -1,12 +1,10 @@
-package database_test
+package database
 
 import (
 	"context"
 	"errors"
 	"testing"
 
-	"github.com/pureapi/pureapi-core/database"
-	"github.com/pureapi/pureapi-core/database/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
@@ -18,8 +16,8 @@ import (
 // tests.
 type TransactionIntTestSuite struct {
 	suite.Suite
-	db types.DB
-	tx types.Tx
+	db DB
+	tx Tx
 }
 
 // TestTransactionIntTestSuite runs the test suite.
@@ -29,7 +27,7 @@ func TestTransactionIntTestSuite(t *testing.T) {
 
 // SetupTest initializes an in-memory SQLite database.
 func (s *TransactionIntTestSuite) SetupTest() {
-	db, err := database.NewSQLDBAdapter("sqlite3", "file::memory:?cache=shared")
+	db, err := NewSQLDBAdapter("sqlite3", "file::memory:?cache=shared")
 	require.NoError(s.T(), err)
 	s.db = db
 
@@ -59,10 +57,10 @@ func (s *TransactionIntTestSuite) TearDownTest() {
 func (s *TransactionIntTestSuite) Test_Success() {
 	// Execute Transaction with a txFn that inserts a row and returns its
 	// last inserted id.
-	lastID, err := database.Transaction(
+	lastID, err := Transaction(
 		context.Background(),
 		s.tx,
-		func(ctx context.Context, tx types.Tx) (int64, error) {
+		func(ctx context.Context, tx Tx) (int64, error) {
 			res, err := tx.Exec(
 				`INSERT INTO Test_ (value) VALUES (?)`, "success",
 			)
@@ -97,10 +95,10 @@ func (s *TransactionIntTestSuite) Test_Success() {
 // rolled back and no changes persist.
 func (s *TransactionIntTestSuite) Test_TxFnError() {
 	// Execute Transaction that returns an error after inserting a row.
-	_, err := database.Transaction(
+	_, err := Transaction(
 		context.Background(),
 		s.tx,
-		func(ctx context.Context, tx types.Tx) (int, error) {
+		func(ctx context.Context, tx Tx) (int, error) {
 			_, err := tx.Exec(
 				`INSERT INTO Test_ (value) VALUES (?)`, "fail",
 			)
@@ -136,8 +134,8 @@ func (s *TransactionIntTestSuite) Test_TxFnError() {
 func (s *TransactionIntTestSuite) Test_Panic() {
 	panicMsg := "panic in txFn"
 	assert.PanicsWithValue(s.T(), panicMsg, func() {
-		_, _ = database.Transaction(context.Background(), s.tx, func(
-			ctx context.Context, tx types.Tx,
+		_, _ = Transaction(context.Background(), s.tx, func(
+			ctx context.Context, tx Tx,
 		) (int, error) {
 			_, err := tx.Exec(
 				`INSERT INTO Test_ (value) VALUES (?)`, "panic",

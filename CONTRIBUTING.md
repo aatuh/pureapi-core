@@ -2,16 +2,17 @@
 
 Thank you for your interest in contributing to PureAPI Core! Your contributions help us maintain a robust, lightweight framework for building web APIs in Go.
 
-
 ## How to Contribute
 
 ### Reporting Issues
+
 - **Bug Reports:**  
   Please report bugs using our GitHub issue tracker. Provide a clear description, reproduction steps, and any relevant logs or error messages.
 - **Feature Requests:**  
   If you have an enhancement idea, open an issue or discussion with a detailed explanation of the proposed improvement.
 
 ### Submitting Pull Requests
+
 1. **Fork and Clone:**  
    Fork the repository and clone your fork locally.
 2. **Create a Branch:**  
@@ -27,6 +28,7 @@ Thank you for your interest in contributing to PureAPI Core! Your contributions 
    Open a pull request describing your changes, linking to any relevant issues, and outlining your testing approach.
 
 ### Coding Guidelines
+
 - Follow Go best practices and maintain consistency in coding style.
 - Write clear, well-documented code with meaningful names.
 - Ensure that new code is accompanied by appropriate tests.
