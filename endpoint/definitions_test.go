@@ -13,61 +13,58 @@ type DefinitionsTestSuite struct {
 	suite.Suite
 }
 
-// TestDefinitionTestSuite runs the test suite.
-func TestDefinitionTestSuite(t *testing.T) {
-	suite.Run(t, new(DefinitionTestSuite))
+// TestDefinitionsTestSuite runs the test suite.
+func TestDefinitionsTestSuite(t *testing.T) {
+	suite.Run(t, new(DefinitionsTestSuite))
 }
 
-// Test_NewDefinitionsAndAdd tests the NewDefinitions and Add methods that
-// the definitions are correctly created and added to the collection.
-func (s *DefinitionsTestSuite) Test_NewDefinitionsAndAdd() {
-	// Create two definitions with simple handlers.
-	d1 := NewDefinition("/one", "GET", nil,
-		http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			_, err := w.Write([]byte("one"))
-			if err != nil {
-				panic(err)
-			}
-		}))
-	d2 := NewDefinition("/two", "POST", nil,
-		http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			_, err := w.Write([]byte("two"))
-			if err != nil {
-				panic(err)
-			}
-		}))
-	defs, err := NewDefinitions(d1)
-	s.NoError(err)
-	s.Equal(1, len(defs.definitions))
-
-	newDefs, err := defs.Add(d2)
-	s.NoError(err)
-	s.Equal(2, len(newDefs.definitions))
-	// Ensure original remains unchanged.
-	s.Equal(1, len(defs.definitions))
-}
-
-// Test_ToEndpoints tests that ToEndpoints returns a slice of endpoints with
-// the correct URL, method and handler.
+// Test_ToEndpoints tests the ToEndpoints helper function.
 func (s *DefinitionsTestSuite) Test_ToEndpoints() {
-	// Create two definitions.
-	d1 := NewDefinition("/one", "GET", nil,
+	// Create two endpoint specifications with simple handlers.
+	spec1 := NewEndpointSpec("/one", "GET", nil,
 		http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			_, err := w.Write([]byte("one"))
 			if err != nil {
 				panic(err)
 			}
 		}))
-	d2 := NewDefinition("/two", "POST", nil,
+	spec2 := NewEndpointSpec("/two", "POST", nil,
 		http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			_, err := w.Write([]byte("two"))
 			if err != nil {
 				panic(err)
 			}
 		}))
-	defs, err := NewDefinitions(d1, d2)
-	s.NoError(err)
-	endpoints := defs.ToEndpoints()
+
+	// Test with single specification
+	endpoints1 := ToEndpoints(spec1)
+	s.Equal(1, len(endpoints1))
+
+	// Test with multiple specifications
+	endpoints2 := ToEndpoints(spec1, spec2)
+	s.Equal(2, len(endpoints2))
+}
+
+// Test_ToEndpointsDetailed tests that ToEndpoints returns a slice of endpoints with
+// the correct URL, method and handler.
+func (s *DefinitionsTestSuite) Test_ToEndpointsDetailed() {
+	// Create two endpoint specifications.
+	spec1 := NewEndpointSpec("/one", "GET", nil,
+		http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			_, err := w.Write([]byte("one"))
+			if err != nil {
+				panic(err)
+			}
+		}))
+	spec2 := NewEndpointSpec("/two", "POST", nil,
+		http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			_, err := w.Write([]byte("two"))
+			if err != nil {
+				panic(err)
+			}
+		}))
+
+	endpoints := ToEndpoints(spec1, spec2)
 	s.Equal(2, len(endpoints))
 
 	// For each endpoint, verify URL, method and handler output.

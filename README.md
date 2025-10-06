@@ -1,69 +1,83 @@
-# PureAPI Core
+# pureapi-core
 
-PureAPI Core is a modular framework for building robust, efficient, and
-maintainable RESTful APIs in Golang. It abstracts common API concerns such as
-error handling, middleware management, and database operations, allowing
-developers to focus on delivering business logic.
+Robust, type-safe HTTP APIs in Go with minimal boilerplate.
 
-## Introduction
+pureapi-core provides the essential building blocks for creating production-ready
+HTTP services. Whether you're building microservices, REST APIs, or web
+applications, this library gives you the power of modern Go patterns with a
+clean, intuitive API.
 
-PureAPI Core is the foundational repository of the PureAPI framework.
-It provides a consistent, extensible base for developing REST APIs by offering:
-- Pre-built modules for handling common tasks.
-- A focus on type safety and clarity.
-- Robust testing for both public interfaces and critical functions.
+## Key Features
 
-Whether you're building microservices, enterprise-grade web
-applications, or prototyping new ideas, PureAPI Core gives you the tools to
-get started quickly and scale with confidence.
+- Type-Safe Endpoints: Generic endpoint pipeline with compile-time type safety
+- Pluggable Architecture: Swap routers, query decoders, and middleware as needed  
+- Zero Dependencies: Built on Go standard library only
+- Production Ready: Built-in body limits, panic recovery, and automatic HEAD/OPTIONS handling
+- Composable: Mix and match components to fit your architecture
+- Event-Driven: Built-in event emitter for observability and monitoring
+- Clean API: Express-like syntax with Go's type system benefits
 
-## Features
+**Generic Endpoint Pipeline**: Transform your HTTP handlers from error-prone manual
+parsing to type-safe, composable functions:
 
-- **Modular Architecture:**  
-  Easily extend and integrate custom middleware, plugins, and extensions.
-- **Custom Error Handling:**  
-  Structured error messages that simplify debugging and client error
-  processing.
-- **Middleware Management:**  
-  Flexible stacking and ordering to handle cross-cutting concerns.
-- **Database Abstraction:**  
-  Generic, type-safe CRUD operations, dynamic SQL generation, and safe
-  transaction management.
-
-## Use Cases
-
-PureAPI Core serves as a solid foundation for a variety of REST API projects,
-including but not limited to:
-
-- **Microservices:** Spin up lightweight services with a consistent development experience.
-- **Enterprise Web Services:** Build scalable and maintainable services.
-- **Rapid Prototyping:** Quickly prototype ideas with minimal setup and clear, tested modules.
-- **API Gateways:** Aggregate and manage multiple services through a unified API layer.
-
-## Quick Start
-
-### Prerequisites
-
-- [Go](https://golang.org/dl/) (version 1.24.0 or higher recommended)
-
-### Installation
-
-Clone the repository and navigate to the project directory:
-
-```bash
-git clone https://github.com/aatuh/pureapi-core.git
-cd pureapi-core
+```go
+// Input → Logic → Error Handling → Output
+handler := endpoint.NewHandler(
+    inputJSON[UserRequest](),     // Parse JSON input
+    businessLogic,                // Your typed business logic  
+    errorMapper,                  // Map errors to HTTP responses
+    outputJSON(),                 // Serialize JSON output
+)
 ```
 
-### Running an Example
+**Smart Routing**: Built-in router with path parameters, method validation, and
+automatic 405 responses.
 
-PureAPI Core comes with several examples. For instance, to run the basic HTTP server example:
+**Middleware Stack**: Compose cross-cutting concerns like authentication,
+logging, and rate limiting.
 
-```bash
-cd doc/examples/serverbasic/
-go run example.go
+**Event System**: Built-in event emitter for metrics, logging, and inter-service
+communication. Wire your own emitter with `pureapi.WithEventEmitter` to stream
+events into your observability stack.
+
+**Swappability**: Pluggable architecture lets you swap components:
+
+```go
+import (
+    "github.com/aatuh/pureapi-core"
+    brackets "github.com/aatuh/pureapi-querydec-brackets"
+)
+
+// Custom router and query decoder
+server := pureapi.NewServer(
+    pureapi.WithRouter(pureapi.NewBuiltinRouter()),
+    pureapi.WithQueryDecoder(brackets.NewDecoder()),
+)
+
+server.Get("/users/:id", func(w http.ResponseWriter, r *http.Request) {
+    // Access route params and query params
+    params := pureapi.RouteParams(r)
+    query := pureapi.QueryMap(r)
+    
+    // Handle request...
+})
 ```
 
-### Documentation
+## Install
 
-For more detailed information, please refer to the documentation provided in the [doc](./doc/index.md) directory.
+```bash
+go get github.com/aatuh/pureapi-core
+```
+
+## Quick start
+
+Check the examples from the [examples package](./examples).
+
+Run examples with:
+
+```bash
+go test -v -count 1 ./examples
+
+# Run specific example.
+go test -v -count 1 ./examples -run Test_BasicHTTP
+```

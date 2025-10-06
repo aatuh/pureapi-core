@@ -1,0 +1,45 @@
+name: Go CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    env:
+      GOEXPERIMENT: aliastypeparams
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.23.x"
+
+      - name: Tidy
+        run: |
+          go mod tidy
+          git diff --exit-code || (echo "run go mod tidy"; exit 1)
+
+      - name: Vet
+        run: go vet ./...
+
+      - name: Vuln check
+        run: go install golang.org/x/vuln/cmd/govulncheck@latest
+      - name: Run govulncheck
+        run: govulncheck ./...
+
+      - name: Unit tests (race + coverage)
+        run: |
+          go test ./... -race -covermode=atomic \
+            -coverprofile=coverage.out
+          go tool cover -func=coverage.out
+
+      - name: Fuzz smoke
+        run: |
+          chmod +x scripts/fuzz.sh
+          scripts/fuzz.sh

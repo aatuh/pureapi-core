@@ -1,12 +1,8 @@
 module github.com/aatuh/pureapi-core
 
-go 1.24.0
+go 1.23
 
-require (
-	github.com/DATA-DOG/go-sqlmock v1.5.2
-	github.com/mattn/go-sqlite3 v1.14.24
-	github.com/stretchr/testify v1.8.4
-)
+require github.com/stretchr/testify v1.9.0
 
 require (
 	github.com/davecgh/go-spew v1.1.1 // indirect

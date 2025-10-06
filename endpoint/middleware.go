@@ -40,7 +40,8 @@ type Stack interface {
 	Remove(id string) (Stack, bool)
 }
 
-// DefaultMiddlewares is a slice of Middleware functions.
+// DefaultMiddlewares is an immutable slice of Middleware functions.
+// All methods return new instances; the original is never modified.
 type DefaultMiddlewares struct {
 	middlewares []Middleware
 }
@@ -92,12 +93,15 @@ func (m DefaultMiddlewares) Chain(h http.Handler) http.Handler {
 	return wrapped
 }
 
-// Add adds one or more middlewares to the list and returns a new
-// DefaultMiddlewares instance.
+// WithAdded adds one or more middlewares to the list and returns a new
+// DefaultMiddlewares instance. The original instance is unchanged.
 //
 // Parameters:
 //   - middlewares: The middlewares to add to the list.
-func (m DefaultMiddlewares) Add(
+//
+// Returns:
+//   - *DefaultMiddlewares: A new DefaultMiddlewares instance with the added middlewares.
+func (m DefaultMiddlewares) WithAdded(
 	middlewares ...Middleware,
 ) *DefaultMiddlewares {
 	allMiddlewares := append([]Middleware{}, m.middlewares...)

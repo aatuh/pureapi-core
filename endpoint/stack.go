@@ -35,7 +35,9 @@ func NewStack(wrappers ...Wrapper) *DefaultStack {
 func (s *DefaultStack) Wrappers() []Wrapper {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
-	return s.wrappers
+	out := make([]Wrapper, len(s.wrappers))
+	copy(out, s.wrappers)
+	return out
 }
 
 // Middlewares returns the middlewares in the stack.
@@ -82,8 +84,8 @@ func (s *DefaultStack) AddWrapper(w Wrapper) Stack {
 
 // InsertBefore inserts a middleware Wrapper before the one with the specified
 // ID. Returns true if a matching wrapper was found and insertion happened
-// before it; if no match is found, the new wrapper is appended and false is
-// returned.
+// before it; if no match is found, the new wrapper is **appended to the end**
+// and false is returned.
 //
 // Parameters:
 //   - id: The ID of the wrapper to insert before.
@@ -112,7 +114,7 @@ func (s *DefaultStack) InsertBefore(
 
 // InsertAfter inserts a middleware Wrapper after the one with the specified ID.
 // Returns true if a matching wrapper was found and insertion happened after it.
-// If no match is found, the new wrapper is appended and false is returned.
+// If no match is found, the new wrapper is **appended to the end** and false is returned.
 //
 // Parameters:
 //   - id: The ID of the wrapper to insert after.
