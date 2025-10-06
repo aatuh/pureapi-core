@@ -27,15 +27,14 @@ type DefaultEndpoint struct {
 // defaultEndpoint implements the Endpoint interface.
 var _ Endpoint = (*DefaultEndpoint)(nil)
 
-// NewEndpoint creates a new defaultEndpoint with the given details.
+// NewEndpoint creates a new DefaultEndpoint with the given details.
 //
 // Parameters:
 //   - url: The URL of the endpoint.
 //   - method: The HTTP method of the endpoint.
-//   - middlewares: The middlewares to apply to the endpoint.
 //
 // Returns:
-//   - *defaultEndpoint: A new defaultEndpoint instance.
+//   - *DefaultEndpoint: A new DefaultEndpoint instance.
 func NewEndpoint(url string, method string) *DefaultEndpoint {
 	return &DefaultEndpoint{
 		URLVal:         url,

@@ -99,10 +99,10 @@ func TestChain(t *testing.T) {
 	}
 }
 
-// TestAdd tests that the Add function creates a new instance
+// TestAddMiddleware tests that the Add function creates a new instance
 // combining the original and added middlewares, while leaving the
 // original instance unchanged.
-func TestAddx(t *testing.T) {
+func TestAddMiddleware(t *testing.T) {
 	var events []string
 
 	// Create an original middleware instance with one middleware.
@@ -111,7 +111,7 @@ func TestAddx(t *testing.T) {
 	additionalMiddleware := makeMiddleware("m2", &events)
 
 	// Create a new instance by adding the additional middleware.
-	mwNew := mwOriginal.Add(additionalMiddleware)
+	mwNew := mwOriginal.WithAdded(additionalMiddleware)
 
 	// Final handler that appends "final" to the shared events.
 	final := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

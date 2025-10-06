@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/aatuh/pureapi-core/endpoint"
+	"github.com/aatuh/pureapi-core/event"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -54,7 +55,7 @@ func (d *DummyHTTPServer) Shutdown(ctx context.Context) error {
 
 func TestDefaultHTTPServer(t *testing.T) {
 	// Create a basic server handler.
-	handler := NewHandler(nil)
+	handler := NewHandler(event.NewNoopEventEmitter())
 	endpoints := []endpoint.Endpoint{
 		endpoint.NewEndpoint("/test", "GET"),
 	}
@@ -77,7 +78,7 @@ func TestStartServer_Normal(t *testing.T) {
 
 	// Create a stopChan so we can control shutdown.
 	stopChan := make(chan os.Signal, 1)
-	handler := NewHandler(nil)
+	handler := NewHandler(event.NewNoopEventEmitter())
 
 	// Start the server in a separate goroutine.
 	errCh := make(chan error, 1)
@@ -105,7 +106,7 @@ func TestStartServer_ListenError(t *testing.T) {
 
 	// Create a stopChan for the server handler.
 	stopChan := make(chan os.Signal, 1)
-	handler := NewHandler(nil)
+	handler := NewHandler(event.NewNoopEventEmitter())
 
 	// In this branch, listenAndServe returns a non-nil error,
 	// which triggers sending a signal on stopChan.
@@ -124,7 +125,7 @@ func TestStartServer_ShutdownError(t *testing.T) {
 
 	// Create a stopChan.
 	stopChan := make(chan os.Signal, 1)
-	handler := NewHandler(nil)
+	handler := NewHandler(event.NewNoopEventEmitter())
 
 	// Send shutdown signal after a short delay.
 	go func() {
@@ -137,90 +138,6 @@ func TestStartServer_ShutdownError(t *testing.T) {
 	assert.Contains(t, err.Error(), "shutdown error")
 }
 
-func TestSetupMuxAndHandlers(t *testing.T) {
-	// Create two endpoints:
-	// - /test with GET returns "OK".
-	// - /panic with GET panics to test panic recovery.
-	endpointOK := endpoint.NewEndpoint("/test", "GET").WithHandler(
-		func(w http.ResponseWriter, r *http.Request) {
-			w.WriteHeader(http.StatusOK)
-			w.Write([]byte("OK"))
-		},
-	)
-	endpointPanic := endpoint.NewEndpoint("/panic", "GET").WithHandler(
-		func(w http.ResponseWriter, r *http.Request) {
-			panic("handler panic")
-		},
-	)
-	endpoints := []endpoint.Endpoint{endpointOK, endpointPanic}
-
-	// Use a dummy logger to capture events.
-	handler := NewHandler(nil)
-	mux := handler.setupMux(endpoints)
-	require.NotNil(t, mux)
-
-	// Test /test with allowed GET method.
-	req := httptest.NewRequest("GET", "/test", nil)
-	rr := httptest.NewRecorder()
-	mux.ServeHTTP(rr, req)
-	assert.Equal(t, http.StatusOK, rr.Code)
-	assert.Equal(t, "OK", rr.Body.String())
-
-	// Test /test with disallowed POST method returns 405.
-	req = httptest.NewRequest("POST", "/test", nil)
-	rr = httptest.NewRecorder()
-	mux.ServeHTTP(rr, req)
-	assert.Equal(t, http.StatusMethodNotAllowed, rr.Code)
-
-	// Test /panic with GET; the panic should be recovered and result in a 500.
-	req = httptest.NewRequest("GET", "/panic", nil)
-	rr = httptest.NewRecorder()
-	mux.ServeHTTP(rr, req)
-	assert.Equal(t, http.StatusInternalServerError, rr.Code)
-
-	// Test an unregistered URL returns 404.
-	req = httptest.NewRequest("GET", "/nonexistent", nil)
-	rr = httptest.NewRecorder()
-	mux.ServeHTTP(rr, req)
-	assert.Equal(t, http.StatusNotFound, rr.Code)
-}
-
-func TestMultiplexEndpoints(t *testing.T) {
-	// Create endpoints with different URLs and methods.
-	end1 := endpoint.NewEndpoint("/a", "GET").WithHandler(
-		func(w http.ResponseWriter, r *http.Request) {
-			w.Write([]byte("A GET"))
-		},
-	)
-	end2 := endpoint.NewEndpoint("/a", "POST").WithHandler(
-		func(w http.ResponseWriter, r *http.Request) {
-			w.Write([]byte("A POST"))
-		},
-	)
-	end3 := endpoint.NewEndpoint("/b", "GET").WithHandler(
-		func(w http.ResponseWriter, r *http.Request) {
-			w.Write([]byte("B GET"))
-		},
-	)
-	endpoints := []endpoint.Endpoint{end1, end2, end3}
-
-	handler := NewHandler(nil)
-	muxed := handler.multiplexEndpoints(endpoints)
-
-	// Check that the keys "/a" and "/b" exist.
-	assert.Contains(t, muxed, "/a")
-	assert.Contains(t, muxed, "/b")
-
-	// Check that "/a" contains both GET and POST.
-	methodsA := muxed["/a"]
-	assert.Contains(t, methodsA, "GET")
-	assert.Contains(t, methodsA, "POST")
-
-	// Check that "/b" contains GET.
-	methodsB := muxed["/b"]
-	assert.Contains(t, methodsB, "GET")
-}
-
 func TestServerPanicHandler(t *testing.T) {
 	// Create a handler that panics.
 	panicHandler := http.HandlerFunc(
@@ -228,7 +145,7 @@ func TestServerPanicHandler(t *testing.T) {
 			panic("test panic")
 		},
 	)
-	handler := NewHandler(nil)
+	handler := NewHandler(event.NewNoopEventEmitter())
 	wrapped := handler.serverPanicHandler(panicHandler)
 
 	req := httptest.NewRequest("GET", "/panic", nil)

@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/aatuh/pureapi-core/endpoint"
+	"github.com/aatuh/pureapi-core/event"
 	"github.com/stretchr/testify/require"
 )
 
@@ -72,7 +73,7 @@ func startFuzzTestServer(tb testing.TB) (addr string, shutdown func()) {
 			_, _ = w.Write([]byte("OK"))
 		},
 	)
-	handler := NewHandler(nil)
+	handler := NewHandler(event.NewNoopEventEmitter())
 	// Use port 0 to let the OS select an available port.
 	server := DefaultHTTPServer(handler, 0, []endpoint.Endpoint{ep})
 	ln, err := net.Listen("tcp", server.Addr)

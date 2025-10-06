@@ -82,29 +82,26 @@ func (d *dummyOutputHandlerNoWrite) Handle(
 	return d.retErr
 }
 
-// dummyEmitterLogger implements util.EmitterLogger.
-type dummyEmitterLogger struct {
+// dummyEventEmitter implements types.EventEmitter.
+type dummyEventEmitter struct {
 	events []*event.Event
 }
 
-func (d *dummyEmitterLogger) Debug(event *event.Event, params ...any) {
+func (d *dummyEventEmitter) RegisterListener(eventType event.EventType, callback event.EventCallback) event.EventEmitter {
+	return d
+}
+
+func (d *dummyEventEmitter) RemoveListener(eventType event.EventType, id string) {}
+
+func (d *dummyEventEmitter) Emit(event *event.Event) {
 	d.events = append(d.events, event)
 }
-func (d *dummyEmitterLogger) Trace(event *event.Event, params ...any) {
-	d.events = append(d.events, event)
+
+func (d *dummyEventEmitter) RegisterGlobalListener(callback event.EventCallback) event.EventEmitter {
+	return d
 }
-func (d *dummyEmitterLogger) Info(event *event.Event, params ...any) {
-	d.events = append(d.events, event)
-}
-func (d *dummyEmitterLogger) Warn(event *event.Event, params ...any) {
-	d.events = append(d.events, event)
-}
-func (d *dummyEmitterLogger) Error(event *event.Event, params ...any) {
-	d.events = append(d.events, event)
-}
-func (d *dummyEmitterLogger) Fatal(event *event.Event, params ...any) {
-	d.events = append(d.events, event)
-}
+
+func (d *dummyEventEmitter) RemoveGlobalListener(id string) {}
 
 // TableTestCase defines parameters for testing the Handle method.
 type TableTestCase struct {
@@ -208,7 +205,7 @@ func (s *HandlerTestSuite) Test_Handle() {
 				retAPIError: nil,
 			}
 
-			emitter := &dummyEmitterLogger{}
+			emitter := &dummyEventEmitter{}
 
 			handler := NewHandler(
 				inHandler, logicFn, errHandler, outHandler,

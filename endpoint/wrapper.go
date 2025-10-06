@@ -15,24 +15,23 @@ var _ Wrapper = (*DefaultWrapper)(nil)
 // NewWrapper creates a new middleware DefaultWrapper.
 //
 // Parameters:
-//   - m: The middleware to wrap.
 //   - id: The ID of the wrapper.
+//   - middleware: The middleware to wrap.
 //
 // Returns:
 //   - *DefaultWrapper: A new DefaultWrapper instance.
 func NewWrapper(
 	id string, middleware Middleware,
 ) *DefaultWrapper {
-	DefaultWrapper := &DefaultWrapper{
+	w := &DefaultWrapper{
 		id:         id,
 		middleware: middleware,
 		data:       nil,
 	}
-	return DefaultWrapper
+	return w
 }
 
-// WithData returns a new DefaultWrapper with the given data and returns a new
-// DefaultWrapper.
+// WithData returns a new DefaultWrapper with the given data.
 //
 // Parameters:
 //   - data: The data to attach to the wrapper.
@@ -45,10 +44,10 @@ func (m *DefaultWrapper) WithData(data any) *DefaultWrapper {
 	return &new
 }
 
-// ID returns the ID of the wrapper.
+// Middleware returns the middleware wrapped by this wrapper.
 //
 // Returns:
-//   - string: The ID of the wrapper.
+//   - Middleware: The wrapped middleware.
 func (m *DefaultWrapper) Middleware() Middleware {
 	return m.middleware
 }

@@ -15,6 +15,7 @@ import (
 	"time"
 
 	"github.com/aatuh/pureapi-core/endpoint"
+	"github.com/aatuh/pureapi-core/event"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -29,7 +30,7 @@ func startOffensiveTestServer(t *testing.T) (addr string, shutdown func()) {
 			_, _ = w.Write([]byte("OK"))
 		},
 	)
-	handler := NewHandler(nil)
+	handler := NewHandler(event.NewNoopEventEmitter())
 	// Using port 0 to let the OS pick an available port.
 	server := DefaultHTTPServer(handler, 0, []endpoint.Endpoint{ep})
 	server.ReadTimeout = 10 * time.Second

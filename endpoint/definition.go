@@ -1,232 +1,62 @@
 package endpoint
 
 import (
-	"fmt"
 	"net/http"
 )
 
-// Endpoint represents an API endpoint with middlewares.
-type Definition interface {
-	URL() string
-	Method() string
-	Stack() Stack
-	Handler() http.HandlerFunc
-	WithURL(string) Definition
-	WithMethod(string) Definition
-	WithMiddlewareStack(Stack) Definition
-	WithHandler(http.HandlerFunc) Definition
-}
-
-// Definitions is a new list of endpoint definitions.
-type Definitions interface {
-	ToEndpoints() []Endpoint
-}
-
-// DefaultDefinition represents an endpoint definition.
-type DefaultDefinition struct {
-	URLVal     string
-	MethodVal  string
-	StackVal   Stack
-	HandlerVal http.HandlerFunc
-}
-
-var _ Definition = (*DefaultDefinition)(nil)
-
-// NewDefinition creates a new endpoint definition.
+// ToEndpoints converts a list of endpoint specifications to a list of API endpoints.
+// This is a simple helper function that replaces the Definition interface.
 //
 // Parameters:
-//   - url: The URL of the endpoint. Defaults to "/" if empty.
-//   - method: The HTTP method of the endpoint.
-//   - stack: The middleware stack for the endpoint.
-//   - handler: The handler for the endpoint.
+//   - specs: The endpoint specifications to convert.
 //
 // Returns:
-//   - *DefaultDefinition: A new DefaultDefinition instance.
-func NewDefinition(
-	url string,
-	method string,
-	stack Stack,
-	handler http.HandlerFunc,
-) *DefaultDefinition {
-	return &DefaultDefinition{
-		URLVal:     defaultURL(url),
-		MethodVal:  method,
-		StackVal:   stack,
-		HandlerVal: handler,
-	}
-}
-
-// URL returns the URL of the endpoint.
-//
-// Returns:
-//   - string: The URL of the endpoint.
-func (d *DefaultDefinition) URL() string {
-	return d.URLVal
-}
-
-// Method returns the HTTP method of the endpoint.
-//
-// Returns:
-//   - string: The HTTP method of the endpoint.
-func (d *DefaultDefinition) Method() string {
-	return d.MethodVal
-}
-
-// Stack returns the middleware stack of the endpoint.
-//
-// Returns:
-//   - Stack: The middleware stack of the endpoint.
-func (d *DefaultDefinition) Stack() Stack {
-	return d.StackVal
-}
-
-// Handler returns the handler of the endpoint.
-//
-// Returns:
-//   - http.HandlerFunc: The handler of the endpoint.
-func (d *DefaultDefinition) Handler() http.HandlerFunc {
-	return d.HandlerVal
-}
-
-// Clone creates a deep copy of an endpoint definition and returns the cloned
-// endpoint definition.
-//
-// Parameters:
-//   - opts: Options to apply to the cloned definition.
-//
-// Returns:
-//   - *Definition: the cloned definition.
-func (d *DefaultDefinition) Clone() *DefaultDefinition {
-	cloned := *d
-	if d.StackVal != nil {
-		cloned.StackVal = d.StackVal.Clone()
-	}
-	return &cloned
-}
-
-// WithURL sets the URL of the endpoint. Defaults to "/" if empty. It returns a
-// new endpoint definition.
-//
-// Parameters:
-//   - url: The URL of the endpoint.
-//
-// Returns:
-//   - Definition: A new Definition.
-func (d *DefaultDefinition) WithURL(url string) Definition {
-	new := *d
-	new.URLVal = defaultURL(url)
-	return &new
-}
-
-// WithMethod sets the method of the endpoint. It returns a new endpoint
-// definition.
-//
-// Parameters:
-//   - method: The method of the endpoint.
-//
-// Returns:
-//   - Definition: A new Definition.
-func (d *DefaultDefinition) WithMethod(method string) Definition {
-	new := *d
-	new.MethodVal = method
-	return &new
-}
-
-// WithHandler sets the handler of the endpoint. It returns a new endpoint
-// definition.
-//
-// Parameters:
-//   - handler: The handler of the endpoint.
-//
-// Returns:
-//   - Definition: A new Definition.
-func (d *DefaultDefinition) WithHandler(handler http.HandlerFunc) Definition {
-	new := *d
-	new.HandlerVal = handler
-	return &new
-}
-
-// WithMiddlewareStack sets the middleware stack of the endpoint. It returns a
-// new endpoint definition.
-//
-// Parameters:
-//   - stack: The middleware stack.
-//
-// Returns:
-//   - Definition: A new Definition.
-func (d *DefaultDefinition) WithMiddlewareStack(stack Stack) Definition {
-	new := *d
-	new.StackVal = stack
-	return &new
-}
-
-// defaultDefinitions is a new list of endpoint definitions.
-type defaultDefinitions struct {
-	definitions []Definition
-}
-
-// DefaultDefinition implements the Definitions interface.
-var _ Definitions = (*defaultDefinitions)(nil)
-
-func NewDefinitions(
-	definitions ...Definition,
-) (*defaultDefinitions, error) {
-	for _, definition := range definitions {
-		if definition == nil {
-			return nil, fmt.Errorf(
-				"NewDefinitions: endpoint definition cannot be nil",
-			)
-		}
-	}
-	return &defaultDefinitions{
-		definitions: definitions,
-	}, nil
-}
-
-// Add adds new endpoint definitions to the list of endpoint definitions.
-//
-// Parameters:
-//   - definitions: The new endpoint definitions.
-//
-// Returns:
-//   - *Definitions: A new list of endpoint definitions.
-func (d defaultDefinitions) Add(
-	definitions ...Definition,
-) (*defaultDefinitions, error) {
-	defs := append([]Definition{}, d.definitions...)
-	defs = append(defs, definitions...)
-	return NewDefinitions(defs...)
-}
-
-// ToEndpoints converts a list of endpoint definitions to a list of API
-// endpoints.
-//
-// Returns:
-//   - []api.Endpoint: a list of API endpoints.
-func (d defaultDefinitions) ToEndpoints() []Endpoint {
+//   - []Endpoint: A list of API endpoints.
+func ToEndpoints(specs ...EndpointSpec) []Endpoint {
 	endpoints := []Endpoint{}
-	for _, definition := range d.definitions {
-		middlewares := []Middleware{}
-		if definition.Stack() != nil {
-			for _, mw := range definition.Stack().Wrappers() {
-				middlewares = append(middlewares, mw.Middleware())
-			}
+	for _, spec := range specs {
+		if spec == nil {
+			continue // Skip nil specifications
 		}
-		endpoints = append(
-			endpoints,
-			NewEndpoint(definition.URL(), definition.Method()).
-				WithMiddlewares(NewMiddlewares(middlewares...)).
-				WithHandler(definition.Handler()),
-		)
+		endpoints = append(endpoints, spec.ToEndpoint())
 	}
 	return endpoints
+}
+
+// EndpointSpec represents a specification for creating an endpoint.
+type EndpointSpec interface {
+	ToEndpoint() Endpoint
+}
+
+// SimpleEndpointSpec is a simple implementation of EndpointSpec.
+type SimpleEndpointSpec struct {
+	URLVal         string
+	MethodVal      string
+	MiddlewaresVal Middlewares
+	HandlerVal     http.HandlerFunc
+}
+
+// ToEndpoint converts the specification to an Endpoint.
+func (s *SimpleEndpointSpec) ToEndpoint() Endpoint {
+	return NewEndpoint(s.URLVal, s.MethodVal).
+		WithMiddlewares(s.MiddlewaresVal).
+		WithHandler(s.HandlerVal)
+}
+
+// NewEndpointSpec creates a new endpoint specification.
+func NewEndpointSpec(url, method string, middlewares Middlewares, handler http.HandlerFunc) *SimpleEndpointSpec {
+	return &SimpleEndpointSpec{
+		URLVal:         defaultURL(url),
+		MethodVal:      method,
+		MiddlewaresVal: middlewares,
+		HandlerVal:     handler,
+	}
 }
 
 // defaultURL returns the default URL if the URL is empty.
 func defaultURL(url string) string {
 	if url == "" {
 		return "/"
-	} else {
-		return url
 	}
+	return url
 }
